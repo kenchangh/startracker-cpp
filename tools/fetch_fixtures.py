@@ -7,6 +7,7 @@
 Fixtures and their licenses:
   tetra3_db      ESA tetra3 default database (Apache-2.0, esa/tetra3 @ f9fa2eb)
   esa_images     ESA tetra3 sample images (CC BY-SA 3.0 IGO, ESA/Gustav Pettersson)
+  cedar_db       cedar-solve default database (Apache-2.0, smroid/cedar-solve @ 607e3f8)
   bsc5           Yale Bright Star Catalogue 5 (public catalogue; copy from cedar-solve tests)
   cedar_corpus   cedar-solve synthetic e2e corpus (99 fields rendered from Gaia DR3)
   hip_main       Hipparcos main catalogue from CDS (I/239). Optional: some networks block CDS.
@@ -35,6 +36,8 @@ FIXTURES = {
         ("esa_alt60.tiff", ESA + "/examples/data/2019-07-29T204726_Alt60_Azi-135_Try1.tiff",
          "f288f6e1fb3a1299626956e3d44740c0260348c65dd9296ac8e07bb27524a5e9"),
     ],
+    "cedar_db": [("cedar_default_database.npz", CEDAR + "/tetra3/data/default_database.npz",
+                  "3bbb922bfaae799788bedc1a3911c3e14210c95d04802700f40b4246c5c04081")],
     "bsc5": [("bsc5", CEDAR + "/tests/data/bsc5",
               "e471d02eaf4eecb61c12f879a1cb6432ba9d7b68a9a8c5654a1eb42a0c8cc340")],
     "cedar_corpus": [("cedar_e2e_synthetic_v1.tar.gz",
@@ -130,11 +133,12 @@ def main():
                         to_pgm(os.path.join(out, f), os.path.join(out, f[:-4] + ".pgm"))
         except ImportError:
             print("note: Pillow not installed; images not converted to PGM")
-    db = os.path.join(a.dir, "default_database.npz")
-    stdb = os.path.join(a.dir, "esa_default.stdb")
-    if a.dbtool and os.path.exists(db) and not os.path.exists(stdb):
-        subprocess.check_call([sys.executable, os.path.join(os.path.dirname(__file__),
-                               "convert_tetra3_npz.py"), db, stdb, "--dbtool", a.dbtool])
+    for npz, stdb in (("default_database.npz", "esa_default.stdb"),
+                      ("cedar_default_database.npz", "cedar_default.stdb")):
+        src, dst = os.path.join(a.dir, npz), os.path.join(a.dir, stdb)
+        if a.dbtool and os.path.exists(src) and not os.path.exists(dst):
+            subprocess.check_call([sys.executable, os.path.join(os.path.dirname(__file__),
+                                   "convert_tetra3_npz.py"), src, dst, "--dbtool", a.dbtool])
 
 
 if __name__ == "__main__":

@@ -12,3 +12,7 @@ st_apply_test_options(st_tools)
 add_executable(st_dbtool cpp/dbtool_main.cpp)
 target_link_libraries(st_dbtool PRIVATE st_tools)
 st_apply_test_options(st_dbtool)
+
+add_executable(st_solve_cases cpp/solve_cases_main.cpp)
+target_link_libraries(st_solve_cases PRIVATE st_tools st_platform)
+st_apply_test_options(st_solve_cases)

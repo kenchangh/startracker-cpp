@@ -30,6 +30,30 @@ print('tetra3: stars', len(t3.star_catalog_IDs), 'rows', len(rows), 'unique sets
 """
 
 
+CEDAR_GEN = """
+import sys, numpy as np, logging
+sys.path.insert(0, sys.argv[1])
+import tetra3
+t3 = tetra3.Tetra3(load_database=None)
+t3._logger.setLevel(logging.WARNING)
+t3.generate_database(max_fov=30, min_fov=20, star_catalog=sys.argv[3], star_max_magnitude=6,
+                     epoch_proper_motion=None, lattice_field_oversampling=20,
+                     patterns_per_lattice_field=50, verification_stars_per_fov=50,
+                     pattern_max_error=0.001, linear_probe=True)
+pc = t3.pattern_catalog
+rows = pc[np.any(pc != 0, axis=1)]
+sets = np.unique(np.sort(t3.star_catalog_IDs[rows], axis=1), axis=0)
+np.savetxt(sys.argv[2], sets, fmt='%d')
+print('cedar-solve: stars', len(t3.star_catalog_IDs), 'rows', len(rows), 'unique sets', len(sets),
+      'slots', pc.shape[0])
+"""
+
+
+def cedar_sets(py, pkg_root, bsc5, out):
+    subprocess.check_call([py, "-c", CEDAR_GEN, pkg_root, out, os.path.abspath(bsc5)])
+    return set(tuple(map(int, l.split())) for l in open(out))
+
+
 def tetra3_sets(py, pkg_root, bsc5, out):
     shutil.copy(bsc5, os.path.join(pkg_root, "tetra3", "bsc5"))
     subprocess.check_call([py, "-c", GEN, pkg_root, out])
@@ -58,7 +82,20 @@ def main():
             raw = tetra3_sets(py, os.path.join(a.env, "tetra3"), a.bsc5, os.path.join(tmp, "t3.txt"))
             print(f"unpatched tetra3: {len(raw)} sets, common with ours {len(ours & raw)} "
                   f"({100.0 * len(ours & raw) / len(raw):.2f}%)")
-        sys.exit(0 if ours == ref else 1)
+        ok = ours == ref
+        # cedar-solve lattice variant (stable-sort cedar-solve vs st_dbtool --lattice).
+        lat_txt = os.path.join(tmp, "lat.txt")
+        subprocess.check_call([a.dbtool, "generate", "--catalog", a.bsc5, "--max-fov", "30",
+                               "--min-fov", "20", "--mag", "6", "--epoch", "none", "--lattice",
+                               "--linear-probe", "--verification-stars", "50",
+                               "--patterns-per-field", "50", "--lattice-oversampling", "20",
+                               "--max-error", "0.001", "--sets-out", lat_txt,
+                               "-o", os.path.join(tmp, "lat.stdb")])
+        lat = set(tuple(map(int, l.split())) for l in open(lat_txt))
+        cref = cedar_sets(py, os.path.join(a.env, "cedar_stable"), a.bsc5, os.path.join(tmp, "c.txt"))
+        print(f"lattice: ours {len(lat)}, cedar-solve(stable) {len(cref)}, common {len(lat & cref)}")
+        ok = ok and lat == cref
+        sys.exit(0 if ok else 1)
 
 
 if __name__ == "__main__":

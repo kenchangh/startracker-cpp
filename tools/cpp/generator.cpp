@@ -168,6 +168,7 @@ Catalog read_catalog(const std::string& path) {
 DbContents generate_database(const Catalog& catalog, const GeneratorConfig& cfg,
                              GeneratorReport* report,
                              std::vector<std::array<std::uint32_t, 4>>* sets_by_id) {
+  if (cfg.lattice) return generate_database_lattice(catalog, cfg, report, sets_by_id);
   if (!(cfg.max_fov_deg > 0)) throw std::runtime_error("max_fov must be > 0");
   const double max_fov = deg2rad(cfg.max_fov_deg);
   const double min_fov = cfg.min_fov_deg > 0 ? deg2rad(cfg.min_fov_deg) : max_fov;
@@ -409,6 +410,283 @@ DbContents generate_database(const Catalog& catalog, const GeneratorConfig& cfg,
     report->pattern_stars =
         static_cast<std::size_t>(std::count(keep_for_patterns.begin(), keep_for_patterns.end(), 1));
     report->verification_stars = m;
+    report->patterns = patterns.size();
+    report->pattern_fovs_deg.clear();
+    for (double f : fovs) report->pattern_fovs_deg.push_back(f * 180.0 / kPi);
+  }
+  return out;
+}
+
+}  // namespace st::tools
+
+namespace st::tools {
+namespace {
+
+bool is_prime(std::uint64_t n) {
+  if (n < 2) return false;
+  if (n % 2 == 0) return n == 2;
+  for (std::uint64_t i = 3; i * i <= n; i += 2) {
+    if (n % i == 0) return false;
+  }
+  return true;
+}
+// cedar-solve _next_prime: smallest prime > n (odd candidates only).
+std::uint64_t next_prime(std::uint64_t n) {
+  if (n < 2) return 2;
+  n = n + 1 + (n % 2);
+  while (!is_prime(n)) n += 2;
+  return n;
+}
+
+// Colex ("breadth-first") enumeration of 4-combinations of [0, n).
+template <class F>
+void breadth_first_4(std::size_t n, F&& f) {
+  if (n < 4) return;
+  std::size_t c[4] = {0, 1, 2, 3};
+  for (;;) {
+    if (!f(c)) return;
+    int i = 0;
+    for (; i < 4; ++i) {
+      const std::size_t limit = i == 3 ? n : c[i + 1];
+      if (c[i] + 1 < limit) {
+        ++c[i];
+        for (int j = 0; j < i; ++j) c[j] = static_cast<std::size_t>(j);
+        break;
+      }
+    }
+    if (i == 4) return;
+  }
+}
+
+}  // namespace
+
+DbContents generate_database_lattice(const Catalog& catalog, const GeneratorConfig& cfg,
+                                     GeneratorReport* report,
+                                     std::vector<std::array<std::uint32_t, 4>>* sets_by_id) {
+  if (!(cfg.max_fov_deg > 0)) throw std::runtime_error("max_fov must be > 0");
+  const double max_fov = deg2rad(cfg.max_fov_deg);
+  const double min_fov = cfg.min_fov_deg > 0 ? deg2rad(cfg.min_fov_deg) : max_fov;
+  const int bins = static_cast<int>(std::nearbyint(1.0 / 4.0 / cfg.pattern_max_error));
+
+  // cedar _load_catalog (C:724-901): all entries, proper motion with cos(dec) > 0.05.
+  struct Row {
+    float ra, dec, mag;
+    std::uint32_t id;
+  };
+  std::vector<Row> rows;
+  const double pm_origin = catalog.pm_origin;
+  const double epoch = cfg.epoch_proper_motion.value_or(pm_origin);
+  const bool propagate = epoch != pm_origin;
+  for (const auto& s : catalog.stars) {
+    double ra = 0, dec = 0;
+    if (catalog.kind == db::CatalogKind::kBsc5) {
+      const double cos_d = std::cos(s.dec);
+      double mu_a = 0, mu_d = 0;
+      if (cos_d > 0.05) {
+        mu_a = s.pm_ra / cos_d;
+        mu_d = s.pm_dec;
+      }
+      ra = s.ra + mu_a * (epoch - pm_origin);
+      dec = s.dec + mu_d * (epoch - pm_origin);
+    } else {
+      if (propagate && !s.has_pm) continue;
+      double mu_a = 0, mu_d = 0;
+      if (propagate) {
+        const double cos_d = std::cos(deg2rad(s.dec));
+        if (cos_d > 0.05) {
+          mu_a = s.pm_ra / 1000 / 60 / 60 / cos_d;
+          mu_d = s.pm_dec / 1000 / 60 / 60;
+        }
+      }
+      ra = deg2rad(s.ra + mu_a * (epoch - pm_origin));
+      dec = deg2rad(s.dec + mu_d * (epoch - pm_origin));
+    }
+    Row r{static_cast<float>(ra), static_cast<float>(dec), static_cast<float>(s.mag), s.id};
+    if (r.ra == 0.0f && r.dec == 0.0f) continue;
+    rows.push_back(r);
+  }
+  std::stable_sort(rows.begin(), rows.end(),
+                   [](const Row& a, const Row& b) { return a.mag < b.mag; });
+
+  // Magnitude limit: given, or cedar's histogram rule (C:1105-1130).
+  double mag_limit = cfg.star_max_magnitude;
+  if (!(mag_limit > 0) && !rows.empty()) {
+    const double lo = rows.front().mag, hi = rows.back().mag;
+    std::vector<std::size_t> histo(100, 0);
+    std::vector<double> edges(101);
+    for (int i = 0; i <= 100; ++i) edges[static_cast<std::size_t>(i)] = lo + (hi - lo) * i / 100.0;
+    edges[100] = hi;
+    for (const auto& r : rows) {
+      std::size_t b = static_cast<std::size_t>(
+                          std::upper_bound(edges.begin(), edges.end(), static_cast<double>(r.mag)) -
+                          edges.begin()) -
+                      1;
+      if (b >= 100) b = 99;
+      ++histo[b];
+    }
+    const double needed =
+        0.7 * std::ceil(4 * kPi / (min_fov * min_fov)) * cfg.verification_stars_per_fov;
+    std::size_t cum = 0;
+    mag_limit = hi;
+    for (std::size_t i = 0; i < 100; ++i) {
+      cum += histo[i];
+      if (static_cast<double>(cum) > needed) {
+        mag_limit = edges[i];
+        break;
+      }
+    }
+  }
+  std::vector<Row> kept;
+  for (const auto& r : rows) {
+    if (r.mag <= mag_limit) kept.push_back(r);
+  }
+  rows.swap(kept);
+  const std::size_t n = rows.size();
+  if (n < 4) throw std::runtime_error("too few stars after filtering");
+  std::vector<V3f> vec(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    const float ra = rows[i].ra, dec = rows[i].dec;
+    vec[i] = {std::cos(ra) * std::cos(dec), std::sin(ra) * std::cos(dec), std::sin(dec)};
+  }
+
+  const double ratio = max_fov / min_fov;
+  const int divisions =
+      static_cast<int>(std::ceil(std::log(ratio) / std::log(cfg.multiscale_step))) + 1;
+  std::vector<double> fovs;
+  if (ratio < std::sqrt(cfg.multiscale_step)) {
+    fovs = {max_fov};
+  } else {
+    const double a = std::log2(min_fov), b = std::log2(max_fov);
+    const double step = (b - a) / (divisions - 1);
+    for (int i = 0; i < divisions; ++i) fovs.push_back(std::exp2(i * step + a));
+    fovs.back() = std::exp2(b);
+  }
+
+  // Patterns per scale (C:1186-1265).
+  std::vector<std::array<std::uint32_t, 4>> patterns;
+  std::size_t pattern_star_total = 0;
+  const double golden = 2 * kPi * (1 - 1 / ((1 + std::sqrt(5.0)) / 2));
+  for (auto it = fovs.rbegin(); it != fovs.rend(); ++it) {
+    const double fov = *it;
+    const double sep_angle =
+        0.6 * (divisions == 1 ? min_fov : fov) / std::sqrt(cfg.verification_stars_per_fov);
+    const double sep = 2 * std::sin(sep_angle / 2);
+    std::vector<char> keep(n, 0);
+    thin(vec, sep, 0, keep);
+    std::vector<std::uint32_t> pidx;
+    for (std::uint32_t i = 0; i < n; ++i) {
+      if (keep[i]) pidx.push_back(i);
+    }
+    pattern_star_total += pidx.size();
+    const double field_dist = 2 * std::sin(fov / 2 / 2);
+    Grid g(vec, pidx, field_dist);
+    const auto nfields =
+        static_cast<long>(std::ceil(4 * kPi / (fov * fov))) * cfg.lattice_field_oversampling;
+    std::vector<std::uint32_t> field;
+    for (long i = -nfields; i <= nfields; ++i) {
+      const double z = static_cast<double>(i) / (static_cast<double>(nfields) + 0.5);
+      const double rad = std::sqrt(1 - z * z);
+      const double theta = golden * static_cast<double>(i);
+      const V3f c = {static_cast<float>(std::cos(theta) * rad),
+                     static_cast<float>(std::sin(theta) * rad), static_cast<float>(z)};
+      field.clear();
+      // The query point is double in cedar; float storage here can move it by ~1e-8, which only
+      // matters for stars within 1e-8 of the field edge.
+      g.query(c, field_dist, [&](std::uint32_t j) { field.push_back(j); });
+      std::sort(field.begin(), field.end());
+      int count = 0;
+      breadth_first_4(field.size(), [&](const std::size_t(&q)[4]) {
+        patterns.push_back({field[q[0]], field[q[1]], field[q[2]], field[q[3]]});
+        return ++count < cfg.patterns_per_lattice_field;
+      });
+    }
+  }
+  std::sort(patterns.begin(), patterns.end());
+  patterns.erase(std::unique(patterns.begin(), patterns.end()), patterns.end());
+  if (sets_by_id) {
+    sets_by_id->clear();
+    for (const auto& p : patterns) {
+      std::array<std::uint32_t, 4> s = {rows[p[0]].id, rows[p[1]].id, rows[p[2]].id, rows[p[3]].id};
+      std::sort(s.begin(), s.end());
+      sets_by_id->push_back(s);
+    }
+  }
+
+  DbContents out;
+  for (std::size_t i = 0; i < n; ++i) {
+    out.star_table.insert(out.star_table.end(),
+                          {rows[i].ra, rows[i].dec, vec[i][0], vec[i][1], vec[i][2], rows[i].mag});
+    out.catalog_ids.push_back(rows[i].id);
+  }
+  const std::uint64_t slots =
+      cfg.linear_probe ? next_prime(3 * patterns.size()) : next_prime(2 * patterns.size());
+  out.slots.assign(slots, {0, 0, 0, 0});
+  out.key_hash.assign(slots, 0);
+  out.largest_edge_half.assign(slots, 0);
+  const std::uint64_t magic = 2654435761ULL;
+  for (const auto& p : patterns) {
+    double vv[4][3];
+    for (int i = 0; i < 4; ++i)
+      for (int k = 0; k < 3; ++k) vv[i][k] = static_cast<double>(vec[p[i]][k]);
+    double e[6];
+    int ne = 0;
+    for (int i = 0; i < 4; ++i)
+      for (int j = i + 1; j < 4; ++j) {
+        const double d = std::hypot(vv[i][0] - vv[j][0], vv[i][1] - vv[j][1], vv[i][2] - vv[j][2]);
+        e[ne++] = 2.0 * std::asin(0.5 * d);
+      }
+    std::sort(e, e + 6);
+    std::uint32_t key[5];
+    for (int i = 0; i < 5; ++i) key[i] = static_cast<std::uint32_t>(e[i] / e[5] * bins);
+    const std::uint64_t kh = pattern_key_hash(key, static_cast<std::uint32_t>(bins));
+    const std::uint64_t start = cfg.linear_probe ? kh % slots : (kh * magic) % slots;
+    // Presort by squared distance from the double mean; ties by position (C:1340-1346).
+    double c[3] = {0, 0, 0};
+    for (int k = 0; k < 3; ++k) c[k] = (vv[0][k] + vv[1][k] + vv[2][k] + vv[3][k]) / 4;
+    std::array<std::pair<double, int>, 4> cd;
+    for (int i = 0; i < 4; ++i) {
+      double s2 = 0;
+      for (int k = 0; k < 3; ++k) s2 += (vv[i][k] - c[k]) * (vv[i][k] - c[k]);
+      cd[static_cast<std::size_t>(i)] = {s2, i};
+    }
+    std::sort(cd.begin(), cd.end());
+    const std::array<std::uint32_t, 4> row = {p[cd[0].second], p[cd[1].second], p[cd[2].second],
+                                              p[cd[3].second]};
+    for (std::uint64_t cpr = 0;; ++cpr) {
+      if (cpr > slots) throw std::runtime_error("probing found no empty slot");
+      const std::uint64_t s =
+          cfg.linear_probe ? (start + cpr) % slots : (start + cpr * cpr) % slots;
+      auto& dst = out.slots[s];
+      if ((dst[0] | dst[1] | dst[2] | dst[3]) == 0) {
+        dst = row;
+        out.key_hash[s] = static_cast<std::uint16_t>(kh & 0xFFFFu);
+        out.largest_edge_half[s] = db::float_to_half(static_cast<float>(e[5] * 1000));
+        break;
+      }
+    }
+  }
+  db::Header& h = out.header;
+  h.probe_mode = cfg.linear_probe ? db::ProbeMode::kLinear : db::ProbeMode::kQuadraticMagic;
+  h.pattern_bins = static_cast<std::uint16_t>(bins);
+  h.pattern_max_error = cfg.pattern_max_error;
+  h.max_fov = max_fov;
+  h.min_fov = min_fov;
+  h.star_max_magnitude = mag_limit;
+  h.epoch_proper_motion = epoch;
+  h.epoch_equinox = catalog.epoch_equinox;
+  h.range_ra[0] = h.range_ra[1] = h.range_dec[0] = h.range_dec[1] = std::nan("");
+  h.pattern_stars_per_fov = static_cast<std::uint16_t>(cfg.lattice_field_oversampling);
+  h.verification_stars_per_fov = static_cast<std::uint16_t>(cfg.verification_stars_per_fov);
+  h.patterns_per_lattice_field = static_cast<std::uint32_t>(cfg.patterns_per_lattice_field);
+  h.num_patterns = static_cast<std::uint32_t>(patterns.size());
+  h.threshold_patterns = h.num_patterns;
+  h.catalog = catalog.kind;
+  h.flags = db::kFlagPresorted | db::kFlagSimplifyPattern | db::kFlagLatticePatterns |
+            db::kFlagClusterBuster;
+  if (report) {
+    report->catalog_stars = n;
+    report->pattern_stars = pattern_star_total;
+    report->verification_stars = n;
     report->patterns = patterns.size();
     report->pattern_fovs_deg.clear();
     for (double f : fovs) report->pattern_fovs_deg.push_back(f * 180.0 / kPi);

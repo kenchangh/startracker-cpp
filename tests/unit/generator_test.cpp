@@ -128,3 +128,45 @@ TEST(Generator, SingleScaleAndRanges) {
   EXPECT_EQ(contents.header.epoch_proper_motion, 1991.25);  // no propagation by default
 }
 }  // namespace
+
+namespace {
+TEST(Generator, LatticeVariantInvariants) {
+  tools::GeneratorConfig cfg;
+  cfg.max_fov_deg = 30;
+  cfg.min_fov_deg = 20;
+  cfg.star_max_magnitude = 6;
+  cfg.lattice = true;
+  cfg.linear_probe = true;
+  cfg.verification_stars_per_fov = 50;
+  cfg.lattice_field_oversampling = 10;
+  cfg.patterns_per_lattice_field = 20;
+  cfg.pattern_max_error = 0.001;
+  tools::GeneratorReport rep;
+  auto blob = tools::build_blob(tools::generate_database(random_catalog(3000, 11), cfg, &rep));
+  auto d = Database::open(blob);
+  ASSERT_TRUE(d.ok());
+  const Database& db = d.value();
+  EXPECT_EQ(db.header().probe_mode, db::ProbeMode::kLinear);
+  EXPECT_TRUE(db.has_key_hash());
+  EXPECT_TRUE(db.has_largest_edge());
+  EXPECT_EQ(db.header().pattern_bins, 250u);
+  EXPECT_EQ(db.header().threshold_patterns, rep.patterns);
+  EXPECT_EQ(db.num_stars(), rep.catalog_stars);  // no verification thinning in this variant
+  EXPECT_GE(db.num_slots(), 3 * rep.patterns);   // next prime above 3N
+  std::array<std::uint32_t, 4> p{};
+  std::size_t checked = 0;
+  for (std::uint64_t s = 0; s < db.num_slots(); s += 5) {
+    if (!db.pattern(s, p)) continue;
+    double largest = 0;
+    const std::uint64_t kh = key_hash_of(db, p, largest);
+    EXPECT_EQ(db.key_hash(s), static_cast<std::uint16_t>(kh & 0xFFFF));
+    const std::uint64_t start = db.start_slot(kh);
+    bool found = false;
+    for (std::uint32_t c = 0; c <= db.max_probe_chain() && !found; ++c)
+      found = db.probe_slot(start, c) == s;
+    EXPECT_TRUE(found);
+    ++checked;
+  }
+  EXPECT_GT(checked, 100u);
+}
+}  // namespace

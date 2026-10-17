@@ -214,6 +214,14 @@ int cmd_generate(int argc, char** argv) {
       cfg.range_ra_deg = range();
     else if (a == "--range-dec")
       cfg.range_dec_deg = range();
+    else if (a == "--lattice")
+      cfg.lattice = true;
+    else if (a == "--lattice-oversampling")
+      cfg.lattice_field_oversampling = std::stoi(next());
+    else if (a == "--patterns-per-field")
+      cfg.patterns_per_lattice_field = std::stoi(next());
+    else if (a == "--linear-probe")
+      cfg.linear_probe = true;
     else if (a == "--sets-out")
       sets_out = next();
     else if (a == "-o")

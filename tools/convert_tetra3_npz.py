@@ -39,9 +39,10 @@ def main():
                 v = "True" if v else "False"
             lines.append(f"{name}={v}")
         names = props.dtype.names
-        # cedar-solve databases use linear probing and record their pattern count.
-        if "pattern_key_hashes" in d.files or ("num_patterns" in names):
-            lines.append("probe=linear")
+        # cedar-solve databases record their table type and pattern count.
+        if "hash_table_type" in names:
+            ht = str(props["hash_table_type"][()])
+            lines.append("probe=" + ("linear" if ht == "linear_probe" else "quadratic"))
         if "verification_stars_per_fov" not in names and "catalog_stars_per_fov" in names:
             lines.append(f"verification_stars_per_fov={props['catalog_stars_per_fov'][()]}")
         with open(os.path.join(tmp, "props.txt"), "w") as f:

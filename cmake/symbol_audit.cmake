@@ -21,8 +21,11 @@ if(ALLOWLIST AND EXISTS "${ALLOWLIST}")
   endforeach()
 endif()
 
+# Placement new (_ZnwmPv, _ZnamPv) never allocates; it shows up as a symbol in -O0 builds.
 set(forbidden
-  "^_Zn[wa]"                    # operator new / new[]
+  "^_Zn[wa][mj]$"               # operator new / new[] (size only)
+  "^_Zn[wa][mj]St"              # aligned / nothrow operator new
+  "^_Zn[wa][mj]RKSt"            # nothrow operator new
   "^_Zd[la]"                    # operator delete / delete[]
   "^(malloc|calloc|realloc|reallocarray|free|posix_memalign|aligned_alloc|memalign|valloc|pvalloc|strdup|strndup)$"
   "^__cxa_(throw|allocate_exception|begin_catch|end_catch|rethrow|free_exception)$"

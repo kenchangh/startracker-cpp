@@ -114,8 +114,12 @@ jobs:
         run: ctest --preset release -j4
       - name: Converter check
         run: parity-env/venv/bin/python tests/parity/converter_check.py fixtures/default_database.npz fixtures/esa_default.stdb
-      - name: Generator parity (BSC5, stable-sort tetra3)
+      - name: Generator parity (BSC5; stable-sort tetra3 and cedar-solve lattice variant)
         run: parity-env/venv/bin/python tests/parity/generator_parity.py --env parity-env --dbtool build/release/tools/st_dbtool --bsc5 fixtures/bsc5 --unpatched
+      - name: Solver parity vs ESA tetra3 (tetra3 centroids, 101 images x 4 option sets)
+        run: parity-env/venv/bin/python tests/parity/solve_parity.py --env parity-env --cases-bin build/release/tools/st_solve_cases --db fixtures/esa_default.stdb --fixtures fixtures
+      - name: Solver parity of the cedar variants vs cedar-solve
+        run: parity-env/venv/bin/python tests/parity/solve_parity.py --impl cedar --env parity-env --cases-bin build/release/tools/st_solve_cases --db fixtures/cedar_default.stdb --fixtures fixtures
 
   fuzz:
     runs-on: ubuntu-24.04

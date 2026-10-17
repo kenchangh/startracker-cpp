@@ -58,6 +58,16 @@ struct GeneratorConfig {
   std::optional<double> epoch_proper_motion;  // nullopt: do not propagate (tetra3 'none')
   std::optional<std::pair<double, double>> range_ra_deg;
   std::optional<std::pair<double, double>> range_dec_deg;
+
+  // cedar-solve lattice-field generation (variant; tetra3 behaviour when false). Uses cedar's
+  // catalog rules (cos(dec) > 0.05 for proper motion, no range filters, all stars <= magnitude
+  // kept for verification), Fibonacci lattice fields, breadth-first combinations, a prime-sized
+  // table, 16-bit key hashes and largest edges. star_max_magnitude <= 0 selects cedar's
+  // histogram-based limit.
+  bool lattice = false;
+  int lattice_field_oversampling = 100;
+  int patterns_per_lattice_field = 50;
+  bool linear_probe = false;
 };
 
 struct GeneratorReport {
@@ -67,6 +77,10 @@ struct GeneratorReport {
   std::size_t patterns = 0;
   std::vector<double> pattern_fovs_deg;
 };
+
+DbContents generate_database_lattice(
+    const Catalog& catalog, const GeneratorConfig& cfg, GeneratorReport* report = nullptr,
+    std::vector<std::array<std::uint32_t, 4>>* pattern_sets_by_id = nullptr);
 
 DbContents generate_database(
     const Catalog& catalog, const GeneratorConfig& cfg, GeneratorReport* report = nullptr,
