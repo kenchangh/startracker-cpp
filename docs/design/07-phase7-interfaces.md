@@ -72,8 +72,8 @@ Status: **implemented** (2026-10-27). Written as built.
 The virgo photo is a 1920×1080 wide shot taken through a strongly distorting lens. Our
 centre agrees to 0.43 px; the 19.4 px corner error is within the 1.5 %-of-diagonal (33 px)
 limit. The 8 unsolved images (crappy, discord_seoul3/4, orion2, orion_trees, pleiades, roof,
-tree) are outside the databases' 10–30° FOV range or too sparse, and tetra3 behaves the same
-way with these databases.
+tree) are likely outside the databases' 10–30° FOV range or too sparse. tetra3 was not run
+on them for comparison.
 
 ## 4. Sidereal rotation on rendered frames
 
