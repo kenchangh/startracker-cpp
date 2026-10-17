@@ -153,8 +153,8 @@ const char* st_status_string(st_status s) {
     case ST_WORK_BUDGET_EXHAUSTED: return "ST_WORK_BUDGET_EXHAUSTED";
     case ST_CANCELLED: return "ST_CANCELLED";
     case ST_IO_ERROR: return "ST_IO_ERROR";
+    default: return "ST_UNKNOWN";
   }
-  return "ST_UNKNOWN";
 }
 
 void st_config_init(st_config* c) {

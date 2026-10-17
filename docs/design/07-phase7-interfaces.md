@@ -59,6 +59,22 @@ Status: **implemented** (2026-10-27). Written as built.
   12). The others are outside the databases' FOV range (10–30°) or are very sparse (tree,
   roof).
 
+### Result (CI run 40457215637, 2026-10-27)
+
+| | |
+|---|---|
+| astrometry.net solved | 23 / 23 |
+| solved by us (either database) | 15 (ESA 12, cedar 12) |
+| wrong solutions | 0 |
+| centre error vs astrometry.net | 0.00–1.06 px (median ≈ 0.25 px) |
+| worst point (corners / edges) | ≤ 2.9 px, except virgo at 19.4 px |
+
+The virgo photo is a 1920×1080 wide shot taken through a strongly distorting lens. Our
+centre agrees to 0.43 px; the 19.4 px corner error is within the 1.5 %-of-diagonal (33 px)
+limit. The 8 unsolved images (crappy, discord_seoul3/4, orion2, orion_trees, pleiades, roof,
+tree) are outside the databases' 10–30° FOV range or too sparse, and tetra3 behaves the same
+way with these databases.
+
 ## 4. Sidereal rotation on rendered frames
 
 `PipelineTest.SiderealRotationOnRenderedFrames` sets up an Earth-fixed camera: a constant

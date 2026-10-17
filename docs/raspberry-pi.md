@@ -5,8 +5,11 @@ This guide covers Raspberry Pi 4, Pi 5 and Pi Zero 2 W running 64-bit Raspberry 
 
 > **Status: not yet run on a Raspberry Pi or a real Pi camera.** What has been checked:
 >
-> * The library builds and its full test suite passes on arm64 Linux in CI (Ubuntu 22.04
->   container, GCC 11 and Clang 14).
+> * The library builds and its full test suite passes on arm64 Linux in CI: Ubuntu 24.04
+>   (GCC 14, Clang 18) and an Ubuntu 22.04 container (GCC 11, Clang 14).
+> * On CI's arm64 runner (Arm Neoverse N2, a server core much faster than a Pi's Cortex-A76
+>   or A72), a 1280×960 frame took 10.9 ms to centroid in full and 0.03 ms in tracking
+>   windows.
 > * The Python capture-to-attitude code in §4 was tested on simulated Bayer frames.
 > * The wide-field database in §3 was tested on rendered 66° frames.
 >

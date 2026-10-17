@@ -88,8 +88,19 @@ ESA default database (99.2 MB, 8818 stars), 40 rendered 1280×960 mono16 frames,
   91 kB, tracker 10 kB, pipeline with 4 slots 27.6 MB (centroider plus 4 frame buffers).
 * Attitude error vs truth (`st_replay run`, 50 frames): median 2.8″ and p99 7.9″ with ROI
   tracking; median 3.0″ and p99 13″ with full-frame centroids.
-* ARM64 numbers come from the CI `bench` job (hosted Graviton-class runner, synthetic
-  database), as indicative values only. Nothing is claimed for a flight processor.
+* ARM64, from the CI `bench` job: GitHub-hosted `ubuntu-24.04-arm` runner, CPU part 0xd49
+  (Arm Neoverse N2), 2 vCPU, GCC 14.2 -O3, synthetic database, same 1280×960 frames.
+  Shared runners are noisy, so treat these as indicative. Nothing is claimed for a flight
+  processor or a Raspberry Pi.
+
+  | measurement | median ms | p99 ms |
+  |---|---|---|
+  | centroid, full frame | 10.94 | 11.11 |
+  | centroid, 32 ROIs | 0.033 | 0.035 |
+  | lost-in-space solve | 0.038 | 0.162 |
+  | tracker update | 0.018 | 0.029 |
+  | pipeline frame, single-threaded (ROI tracking) | 0.053 | 11.15 |
+  | pipeline frame, threaded | 10.92 | 11.15 |
 
 ## 5. Verification
 
