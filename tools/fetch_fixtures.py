@@ -44,8 +44,9 @@ FIXTURES = {
                       "https://github.com/smroid/cedar-solve/releases/download/e2e-corpus-v1/"
                       "cedar_e2e_synthetic_v1.tar.gz",
                       "98a54e2dea4984ad84d6eb129b56ff08317a6c935d3a8bf795ce3373e40dfee5")],
-    # CDS is unreachable from some sandboxes; the hash is pinned from a CI download.
-    "hip_main": [("hip_main.dat", "https://cdsarc.cds.unistra.fr/ftp/I/239/hip_main.dat", None)],
+    # CDS is unreachable from some sandboxes (optional); hash pinned from a CI download.
+    "hip_main": [("hip_main.dat", "https://cdsarc.cds.unistra.fr/ftp/I/239/hip_main.dat",
+                  "58ceabb104d647160d9437ce6e513a02a036bb4ad9f8879a5a22fd52943616e0")],
 }
 OPTIONAL = {"hip_main"}
 
