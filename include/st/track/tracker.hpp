@@ -90,6 +90,8 @@ class Tracker {
   // kInvalidArgument (camera or limits), kArenaExhausted.
   static Result<Tracker> create(const SkyIndex& index, LostInSpaceSolver* lis,
                                 const TrackerConfig& config, Arena& arena) noexcept;
+  // Upper bound of the arena bytes create() takes (alignment padding included). O(1).
+  static std::size_t workspace_bytes(const TrackerConfig& config) noexcept;
 
   Tracker() noexcept = default;
 

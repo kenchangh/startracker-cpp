@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 cmake_minimum_required(VERSION 3.21)
-project(startracker_cpp VERSION 0.1.0 LANGUAGES CXX)
+project(startracker_cpp VERSION 0.1.0 LANGUAGES C CXX)
 
 option(ST_STRICT "Build the core with -fno-exceptions -fno-rtti" ON)
 option(ST_WERROR "Treat warnings as errors" OFF)

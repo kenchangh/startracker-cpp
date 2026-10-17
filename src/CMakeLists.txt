@@ -35,3 +35,22 @@ target_link_libraries(st_platform PUBLIC st_core)
 st_apply_core_options(st_platform)
 find_package(Threads REQUIRED)
 target_link_libraries(st_platform PUBLIC Threads::Threads)
+
+# C API (libstartracker): a shared library over the core; only st_* symbols are exported.
+set_target_properties(st_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_library(startracker SHARED capi/st_c.cpp)
+target_link_libraries(startracker PRIVATE st_core)
+target_include_directories(startracker PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
+target_compile_definitions(startracker PRIVATE ST_VERSION_STRING="${PROJECT_VERSION}")
+set_target_properties(startracker PROPERTIES
+  CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON
+  VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+st_apply_core_options(startracker)
+if(APPLE)
+  target_link_options(startracker PRIVATE "LINKER:-exported_symbol,_st_*")
+else()
+  target_link_options(startracker PRIVATE "LINKER:--exclude-libs,ALL")
+  if(NOT ST_SANITIZE)  # sanitizer runtimes are resolved from the executable
+    target_link_options(startracker PRIVATE "LINKER:--no-undefined")
+  endif()
+endif()

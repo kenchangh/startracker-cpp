@@ -304,6 +304,48 @@ TEST_F(PipelineTest, WorkspaceBytesIsEnough) {
   }
 }
 
+// Earth-fixed camera on rendered frames: the sky drifts at the sidereal rate. The full path
+// (render -> ROI centroids -> tracker) must recover the rate about the celestial pole.
+TEST_F(PipelineTest, SiderealRotationOnRenderedFrames) {
+  constexpr double kSidereal = 7.2921150e-5;     // rad/s
+  constexpr std::int64_t kStep = 2'000'000'000;  // 0.5 Hz
+  TrackerConfig tc;
+  tc.camera = camera();
+  tc.rate_window = 32;
+  auto tr = Tracker::create(index_, &lis_, tc, *arena_);
+  ASSERT_TRUE(tr.ok());
+  tools::RenderConfig rc;
+  rc.camera = camera();
+  rc.exposure_s = 0.2;
+  rc.q_cam_icrs = attitude_from_radec_roll(3.3, 0.6, 1.4);
+  rc.seed = 11;
+  // q(t) = q0 * exp(-w t z_icrs) = exp(-w t R(q0) z) * q0: a constant body rate.
+  const Vec3 body_rate = kSidereal * rotate(rc.q_cam_icrs, Vec3{0, 0, 1});
+  const auto seq = tools::render_sequence(tools::stars_from_database(synthetic_db().db), rc,
+                                          body_rate, 40, kStep);
+  MemoryFrameSource src(seq.format, seq.pixels, seq.t_ns, kStep);
+  PipelineConfig cfg;
+  cfg.output_queue = 64;
+  Pipeline p;
+  ASSERT_EQ(p.init(src, tr.value(), clock_, cfg, *arena_), Status::kOk);
+  while (p.step() == Status::kOk) {
+  }
+  PipelineOutput o, last;
+  int n = 0;
+  while (p.poll(o)) {
+    ASSERT_EQ(o.solution.status, Status::kOk) << n;
+    EXPECT_LT(angle_between(o.solution.q_cam_icrs, seq.truth[o.source_seq]) / kArcsecToRad, 40.0)
+        << n;
+    last = o;
+    ++n;
+  }
+  ASSERT_EQ(n, 40);
+  ASSERT_TRUE(last.solution.rate_valid);
+  const Vec3 pole_cam = rotate(last.solution.q_cam_icrs, Vec3{0, 0, 1});
+  EXPECT_NEAR(norm(last.solution.rate), kSidereal, 0.05 * kSidereal);
+  EXPECT_LT(angle_between_unit(normalized(last.solution.rate), pole_cam), 5 * kDegToRad);
+}
+
 TEST(ReplaySourceTest, LoopsPacesAndRejectsCorruptFiles) {
   tools::Sequence s;
   s.format = {4, 3, PixelFormat::kMono8};

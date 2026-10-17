@@ -42,10 +42,11 @@ add_executable(st_unit_tests
   unit/centroider_test.cpp
   unit/tracker_test.cpp
   unit/pipeline_test.cpp
+  unit/capi_test.cpp
 )
 target_include_directories(st_unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(st_unit_tests PRIVATE ST_FIXTURES_DIR="${PROJECT_SOURCE_DIR}/fixtures")
-target_link_libraries(st_unit_tests PRIVATE st_core st_platform st_tools st_alloc_guard GTest::gtest_main)
+target_link_libraries(st_unit_tests PRIVATE st_core st_platform st_tools st_alloc_guard startracker GTest::gtest_main)
 st_apply_test_options(st_unit_tests)
 gtest_discover_tests(st_unit_tests DISCOVERY_MODE PRE_TEST)
 
@@ -54,7 +55,7 @@ set(_audit_args -DNM=${CMAKE_NM} -DALLOWLIST=${PROJECT_SOURCE_DIR}/cmake/symbol_
 if(APPLE)
   list(APPEND _audit_args -DSTRIP_UNDERSCORE=ON)
 endif()
-foreach(lib st_core st_platform)
+foreach(lib st_core st_platform startracker)
   add_test(NAME symbol_audit.${lib}
     COMMAND ${CMAKE_COMMAND} ${_audit_args} -DLIB=$<TARGET_FILE:${lib}>
             -P ${PROJECT_SOURCE_DIR}/cmake/symbol_audit.cmake)
@@ -105,3 +106,23 @@ endforeach()
 add_test(NAME sweep.nominal
   COMMAND st_sweep --db ${PROJECT_SOURCE_DIR}/fixtures/esa_default.stdb --trials 6 --check --quick)
 set_tests_properties(sweep.nominal PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 600)
+
+# ---- C API: C smoke test on a real image (skips without fixtures) ----
+add_executable(st_capi_smoke capi/capi_smoke.c)
+set_target_properties(st_capi_smoke PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON)
+target_compile_options(st_capi_smoke PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(st_capi_smoke PRIVATE startracker)
+add_test(NAME capi.smoke_esa_alt40
+  COMMAND st_capi_smoke ${PROJECT_SOURCE_DIR}/fixtures/esa_default.stdb
+          ${PROJECT_SOURCE_DIR}/fixtures/esa_alt40.pgm 11.4)
+set_tests_properties(capi.smoke_esa_alt40 PROPERTIES SKIP_RETURN_CODE 77)
+
+# ---- Python bindings (ctypes; skips without fixtures or Python 3) ----
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_FOUND AND NOT ST_SANITIZE)  # a sanitized .so cannot load into plain Python
+  add_test(NAME python.bindings_esa_alt40
+    COMMAND ${CMAKE_COMMAND} -E env STARTRACKER_LIB=$<TARGET_FILE:startracker>
+            ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/test_bindings.py
+            ${PROJECT_SOURCE_DIR}/python ${PROJECT_SOURCE_DIR}/fixtures)
+  set_tests_properties(python.bindings_esa_alt40 PROPERTIES SKIP_RETURN_CODE 77)
+endif()

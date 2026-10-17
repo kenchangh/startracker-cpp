@@ -19,6 +19,8 @@ class SkyIndex {
   // `grid` cells per cube-face edge (6 * grid^2 cells). Memory: 4 * (6 grid^2 + 1 + stars)
   // bytes plus 32 bytes per cell. Build: O(stars + cells).
   static Result<SkyIndex> create(const Database& db, std::uint32_t grid, Arena& arena) noexcept;
+  // Upper bound of the arena bytes create() takes (alignment padding included). O(1).
+  static std::size_t workspace_bytes(const Database& db, std::uint32_t grid) noexcept;
 
   SkyIndex() noexcept = default;
 

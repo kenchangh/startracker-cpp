@@ -34,6 +34,12 @@ bool invert3(const Mat3& a, Mat3& out) noexcept {
 
 }  // namespace
 
+std::size_t Tracker::workspace_bytes(const TrackerConfig& c) noexcept {
+  const std::size_t p = c.max_predicted, n = c.max_centroids;
+  return p * (sizeof(Predicted) + sizeof(Pair) + 2 * sizeof(Vec3) + sizeof(double)) +
+         n * (1 + sizeof(Centroid)) + std::size_t{8} * 64;
+}
+
 Result<Tracker> Tracker::create(const SkyIndex& index, LostInSpaceSolver* lis,
                                 const TrackerConfig& cfg, Arena& arena) noexcept {
   ST_TRY_ASSIGN(auto cam, CameraModel::create(cfg.camera));

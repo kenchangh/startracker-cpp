@@ -85,7 +85,7 @@ jobs:
       - run: CC=clang-18 CXX=clang++-18 cmake --preset dev
       - run: cmake --build --preset dev --target st_core st_platform st_strict_headers
       - name: clang-tidy on the core and every public header
-        run: run-clang-tidy-18 -p build/dev -quiet -warnings-as-errors='*' 'src/core/|src/platform/|strict_headers/'
+        run: run-clang-tidy-18 -p build/dev -quiet -warnings-as-errors='*' 'src/core/|src/platform/|src/capi/|strict_headers/'
 
   # Real data: fetch fixtures (pinned SHA-256), convert the ESA database, run fixture tests and
   # parity against ESA tetra3 (pinned NumPy 1.x environment).
@@ -116,6 +116,8 @@ jobs:
         run: parity-env/venv/bin/python tests/parity/converter_check.py fixtures/default_database.npz fixtures/esa_default.stdb
       - name: Generator parity (BSC5; stable-sort tetra3 and cedar-solve lattice variant)
         run: parity-env/venv/bin/python tests/parity/generator_parity.py --env parity-env --dbtool build/release/tools/st_dbtool --bsc5 fixtures/bsc5 --unpatched
+      - name: Generator on Hipparcos vs the shipped ESA database (informational; skips without CDS)
+        run: parity-env/venv/bin/python tests/parity/hip_esa_db_check.py --dbtool build/release/tools/st_dbtool --hip fixtures/hip_main.dat --npz fixtures/default_database.npz || test $? -eq 77
       - name: Solver parity vs ESA tetra3 (tetra3 centroids, 101 images x 4 option sets)
         run: parity-env/venv/bin/python tests/parity/solve_parity.py --env parity-env --cases-bin build/release/tools/st_solve_cases --db fixtures/esa_default.stdb --fixtures fixtures
       - name: End-to-end parity (images -> centroids -> solution) incl. our renders
@@ -133,6 +135,40 @@ jobs:
         run: build/release/tools/st_bench --db fixtures/esa_default.stdb --frames 40 --out bench.md && cat bench.md >> $GITHUB_STEP_SUMMARY
       - name: Solver parity of the cedar variants vs cedar-solve
         run: parity-env/venv/bin/python tests/parity/solve_parity.py --impl cedar --env parity-env --cases-bin build/release/tools/st_solve_cases --db fixtures/cedar_default.stdb --fixtures fixtures
+
+  # Real sky: 23 night-sky photos plate-solved by astrometry.net (Tycho-2 index 4107-4119), then
+  # our lost-in-space solutions (ESA and cedar databases) checked against those references.
+  real-sky:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain and astrometry.net
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++-14 astrometry.net astrometry-data-tycho2-07 \
+            astrometry-data-tycho2-08 astrometry-data-tycho2-09 astrometry-data-tycho2-10-19 \
+            python3-numpy python3-pil
+      - name: Build
+        run: CC=gcc-14 CXX=g++-14 cmake --preset release && cmake --build --preset release --target st_dbtool startracker
+      - name: Fetch fixtures
+        run: python3 tools/fetch_fixtures.py --only tetra3_db cedar_db real_sky --dbtool build/release/tools/st_dbtool
+      - name: astrometry.net references
+        run: |
+          python3 tests/realsky/realsky_check.py make-references --images fixtures/real_sky --out realsky_refs.json --cpulimit 120
+          cat realsky_refs.json
+      - name: Compare with astrometry.net
+        shell: bash
+        run: |
+          STARTRACKER_LIB=build/release/src/libstartracker.so python3 tests/realsky/realsky_check.py check \
+            --images fixtures/real_sky --refs realsky_refs.json --db fixtures/esa_default.stdb \
+            --db fixtures/cedar_default.stdb --require $(cd fixtures/real_sky && ls 2019-*.pgm | sed 's/.pgm$//') \
+            | tee realsky.md
+          cat realsky.md >> $GITHUB_STEP_SUMMARY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: realsky
+          path: realsky*
 
   # Latency benchmarks on the hosted x64 and arm64 runners (synthetic database; shared runners
   # are noisy, so these numbers are indicative only; the report names the CPU).

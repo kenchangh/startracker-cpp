@@ -51,6 +51,12 @@ std::uint32_t SkyIndex::cell_of(const Vec3& v, std::uint32_t grid) noexcept {
   return (face * grid + idx(w)) * grid + idx(u);
 }
 
+std::size_t SkyIndex::workspace_bytes(const Database& db, std::uint32_t grid) noexcept {
+  const std::size_t cells = std::size_t{6} * grid * grid;
+  return (cells + 1) * 4 + std::size_t{db.num_stars()} * 4 + cells * (sizeof(Vec3) + 8) +
+         std::size_t{4} * 64;
+}
+
 Result<SkyIndex> SkyIndex::create(const Database& db, std::uint32_t grid, Arena& arena) noexcept {
   if (grid == 0 || grid > 1024) return Status::kInvalidArgument;
   SkyIndex s;
