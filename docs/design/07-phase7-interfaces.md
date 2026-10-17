@@ -64,7 +64,7 @@ Status: **implemented** (2026-10-27). Written as built.
 | | |
 |---|---|
 | astrometry.net solved | 23 / 23 |
-| solved by us (either database) | 15 (ESA 12, cedar 12) |
+| solved by us (either database) | 15 (ESA 12, cedar 14) |
 | wrong solutions | 0 |
 | centre error vs astrometry.net | 0.00–1.06 px (median ≈ 0.25 px) |
 | worst point (corners / edges) | ≤ 2.9 px, except virgo at 19.4 px |
