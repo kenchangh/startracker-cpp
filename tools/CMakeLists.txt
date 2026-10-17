@@ -39,3 +39,7 @@ st_apply_test_options(st_replay)
 add_executable(st_bench cpp/bench_main.cpp)
 target_link_libraries(st_bench PRIVATE st_tools st_platform)
 st_apply_test_options(st_bench)
+
+add_executable(st_time_images cpp/time_images_main.cpp)
+target_link_libraries(st_time_images PRIVATE st_tools st_platform)
+st_apply_test_options(st_time_images)

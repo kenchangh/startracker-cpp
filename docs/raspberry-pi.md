@@ -16,6 +16,51 @@ This guide covers Raspberry Pi 4, Pi 5 and Pi Zero 2 W running 64-bit Raspberry 
 > If you run it on hardware, the `st_bench` output from §6 is the most useful thing to report
 > back.
 
+## Quick start: one command
+
+```sh
+git clone https://github.com/kenchangh/startracker-cpp.git && cd startracker-cpp
+scripts/raspi/run.sh --camera hq-16mm
+```
+
+[`scripts/raspi/run.sh`](../scripts/raspi/run.sh) runs every step in this guide:
+
+1. Installs the apt packages (§2).
+2. Builds a release library in `build/pi`, using fewer parallel compiles on boards with
+   little memory.
+3. Fetches or generates the right database for your camera's FOV (§3).
+4. Starts the Picamera2 capture-and-track loop (§4, in
+   [`scripts/raspi/pi_tracker.py`](../scripts/raspi/pi_tracker.py)).
+
+Steps already done are skipped, so a re-run starts tracking within seconds.
+
+| `--camera` | camera + lens | raw mode → tracked image | FOV | database |
+|---|---|---|---|---|
+| `hq-12mm` / `hq-16mm` / `hq-25mm` | HQ Camera + C-mount lens | 2028×1520 → 1014×760 | 29.4° / 22.2° / 14.3° | cedar (38 MB) |
+| `gs-12mm` / `gs-16mm` | Global Shutter Camera + lens | 1456×1088 → 728×544 | 23.6° / 17.8° | cedar (38 MB) |
+| `cm3` | Camera Module 3 | 2304×1296 → 1152×648 | 66° | generated wide (8 MB) |
+| `cm2` | Camera Module 2 | 1640×1232 → 820×616 | 62.2° | generated wide (8 MB) |
+
+Every preset tracked 40 of 40 rendered frames in `st_bench` at its own resolution and FOV
+(0.5°/s rotation).
+
+```sh
+scripts/raspi/run.sh --camera gs-16mm --exposure-ms 200 --gain 16   # exposure settings
+scripts/raspi/run.sh --camera hq-16mm --csv attitude.csv --frames 600   # log 600 frames
+scripts/raspi/run.sh --camera hq-16mm --save-pgm night1/               # record frames
+scripts/raspi/run.sh --fov 22.2 --from-pgm night1/                      # replay them, no camera
+scripts/raspi/run.sh --camera hq-16mm --bench                           # speed on this Pi
+scripts/raspi/run.sh --fov 19.5 --mode 2028x1520                        # any other lens
+scripts/raspi/run.sh --help
+```
+
+* **Each frame prints:** status, mode (`lost_in_space` or `tracking`), RA/Dec/roll, the
+  number of matched stars, and the processing time.
+* **The `--csv` log adds:** the quaternion, the residual RMS, and the timing. Frames without
+  an attitude have empty attitude fields.
+
+The rest of this guide explains each step, if you want to do them by hand or adapt them.
+
 ## 1. Pick a camera and lens
 
 The solver needs to know roughly how wide the camera's view is (its horizontal field of
