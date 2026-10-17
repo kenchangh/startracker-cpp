@@ -375,8 +375,17 @@ TEST(ReplaySourceTest, LoopsPacesAndRejectsCorruptFiles) {
     EXPECT_EQ(info.source_seq, static_cast<std::uint64_t>(k));
   }
   EXPECT_GE(clock.now_ns() - t0, 6 * 10'000'000LL - 1'000'000);
-  // Not due within a 1 ms timeout: kTimeout.
-  EXPECT_EQ(r.value().acquire(buf, 1'000'000, info), Status::kTimeout);
+  // Deterministic pacing with a manual clock: the next frame is due 10 ms after the first.
+  ManualClock manual(5'000'000'000);
+  ReplayOptions mopt;
+  mopt.pace_clock = &manual;
+  mopt.speed = 2.0;
+  auto paced = ReplaySource::open(path, mopt);
+  ASSERT_TRUE(paced.ok());
+  ASSERT_EQ(paced.value().acquire(buf, 1'000'000, info), Status::kOk);
+  EXPECT_EQ(paced.value().acquire(buf, 1'000'000, info), Status::kTimeout);  // not due within 1 ms
+  manual.advance_ns(10'000'000);
+  EXPECT_EQ(paced.value().acquire(buf, 1'000'000, info), Status::kOk);
   // Without loop: kCancelled at the end.
   auto once = ReplaySource::open(path, ReplayOptions{});
   ASSERT_TRUE(once.ok());

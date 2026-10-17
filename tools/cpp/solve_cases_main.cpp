@@ -13,6 +13,7 @@
 //   result <name> <status> <ra> <dec> <roll> <fov_deg> <dist> <rmse> <matches> <prob> <us>
 //   matched <catalog_id>... (in tetra3 match order)
 //   pattern <i0> <i1> <i2> <i3>
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>

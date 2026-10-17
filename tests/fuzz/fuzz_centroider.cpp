@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // libFuzzer target: the centroider must handle any image content, size and configuration.
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <vector>

@@ -159,7 +159,9 @@ Status V4L2Source::acquire(std::span<std::byte> dst, std::int64_t timeout_ns,
 #else  // !__linux__
 
 void V4L2Source::close() noexcept {}
-Result<V4L2Source> V4L2Source::open(const char*, const V4L2Options&) noexcept {
+Result<V4L2Source> V4L2Source::open(const char* device, const V4L2Options& o) noexcept {
+  if (device == nullptr || o.buffers < 2 || o.buffers > kMaxBuffers)
+    return Status::kInvalidArgument;
   return Status::kUnsupported;
 }
 Status V4L2Source::acquire(std::span<std::byte>, std::int64_t, FrameInfo&) noexcept {

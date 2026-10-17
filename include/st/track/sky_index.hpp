@@ -4,6 +4,7 @@
 // Cube-map spatial index over a database's star table for cone queries. Built once from an
 // Arena (CSR arrays); queries never allocate.
 
+#include <algorithm>
 #include <cstdint>
 #include <span>
 

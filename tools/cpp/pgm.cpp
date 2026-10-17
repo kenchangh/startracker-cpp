@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "pgm.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <stdexcept>
 
