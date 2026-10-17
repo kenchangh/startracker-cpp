@@ -5,11 +5,10 @@
   OMP_NUM_THREADS=1 <parity env>/venv/bin/python tests/parity/speed_vs_tetra3.py \\
       --env <parity env> --build build/release [--reps 5] [--json out.json]
 
-Per photo, three ways (median of --reps runs each):
+Per photo (median of --reps runs each):
   tetra3    ESA's Python library: get_centroids_from_image + solve_from_centroids
-  bindings  startracker-cpp through the Python bindings (ctypes + C API overhead included)
-  direct    startracker-cpp called from C++ (tools/st_time_images), same pixels
-Also checks that all three give the same answer.
+  bindings  startracker-cpp through its Python bindings (ctypes + C API overhead included)
+Also checks that both give the same answer.
 """
 import argparse
 import glob
@@ -18,9 +17,7 @@ import logging
 import os
 import platform
 import statistics as stt
-import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
 
@@ -40,7 +37,7 @@ def cpu_model():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--env", required=True)
-    ap.add_argument("--build", required=True, help="build dir with src/libstartracker.so and tools/")
+    ap.add_argument("--build", required=True, help="build dir with src/libstartracker.so")
     ap.add_argument("--fixtures", default=os.path.join(REPO, "fixtures"))
     ap.add_argument("--reps", type=int, default=5)
     ap.add_argument("--json")
@@ -48,7 +45,6 @@ def main():
     sys.path.insert(0, os.path.join(a.env, "tetra3"))
     sys.path.insert(0, os.path.join(REPO, "python"))
     os.environ["STARTRACKER_LIB"] = os.path.abspath(os.path.join(a.build, "src", "libstartracker.so"))
-    tmp = tempfile.mkdtemp()
     import numpy as np
     import tetra3
     from PIL import Image
@@ -79,36 +75,15 @@ def main():
         os_ms, orr = med(lambda: ours.solve_lost_in_space(oc, w, h))
         same = (tr["RA"] is None) == (not orr.ok) and (
             tr["RA"] is None or (abs(tr["RA"] - orr.ra_deg) < 1e-3 and abs(tr["Dec"] - orr.dec_deg) < 1e-3))
-        pgm = os.path.join(tmp, name + ".pgm")  # the exact pixels, for the direct C++ run
-        with open(pgm, "wb") as f:
-            f.write(f"P5\n{w} {h}\n255\n".encode() + arr.astype(np.uint8).tobytes())
-        rows.append(dict(image=name, width=w, height=h, solved=bool(orr.ok), same=bool(same), pgm=pgm,
-                         ra=None if tr["RA"] is None else float(tr["RA"]), dec=None if tr["Dec"] is None else float(tr["Dec"]),
+        rows.append(dict(image=name, width=w, height=h, solved=bool(orr.ok), same=bool(same),
                          tetra3_centroid_ms=tc_ms, tetra3_solve_ms=ts_ms,
                          bindings_centroid_ms=oc_ms, bindings_solve_ms=os_ms))
-
-    out = subprocess.run([os.path.join(a.build, "tools", "st_time_images"), "--db",
-                          os.path.join(a.fixtures, "esa_default.stdb"), "--reps", str(a.reps)] +
-                         [r["pgm"] for r in rows], check=True, capture_output=True, text=True).stdout
-    direct = {}
-    for line in out.splitlines():
-        path, c_ms, s_ms, status, ra, dec = line.split()
-        direct[path] = (float(c_ms), float(s_ms), status, float(ra), float(dec))
-    for r in rows:
-        c_ms, s_ms, status, ra, dec = direct[r["pgm"]]
-        os.unlink(r.pop("pgm"))
-        r["direct_centroid_ms"], r["direct_solve_ms"] = c_ms, s_ms
-        ok = status == "kOk"
-        r["same"] = bool(r["same"] and ok == r["solved"] and (
-            not ok or (abs(ra - r["ra"]) < 1e-3 and abs(dec - r["dec"]) < 1e-3)))
-        print(f"{r['image'][:30]:30s} {r['width']}x{r['height']}  total ms: tetra3 "
-              f"{r['tetra3_centroid_ms'] + r['tetra3_solve_ms']:7.2f}  bindings "
-              f"{r['bindings_centroid_ms'] + r['bindings_solve_ms']:6.2f}  direct "
-              f"{c_ms + s_ms:6.2f}   {'solved' if r['solved'] else 'no match':8s} same={r['same']}")
+        print(f"{name[:30]:30s} {w}x{h}  total ms: tetra3 {tc_ms + ts_ms:7.2f}  startracker-cpp "
+              f"{oc_ms + os_ms:6.2f}   {'solved' if orr.ok else 'no match':8s} same={same}", flush=True)
 
     def summary(sel):
         out = dict(n=len(sel))
-        for p in ("tetra3", "bindings", "direct"):
+        for p in ("tetra3", "bindings"):
             for k in ("centroid", "solve"):
                 out[f"{p}_{k}_ms"] = stt.median(r[f"{p}_{k}_ms"] for r in sel)
             out[f"{p}_total_ms"] = stt.median(r[f"{p}_centroid_ms"] + r[f"{p}_solve_ms"] for r in sel)
@@ -120,11 +95,10 @@ def main():
                all_same=all(r["same"] for r in rows), images=rows)
     for k in ("solved", "unsolved"):
         s = out[k]
-        print(f"\n{k} photos ({s['n']}), medians in ms:   tetra3   bindings   direct")
+        print(f"\n{k} photos ({s['n']}), medians in ms:   tetra3   startracker-cpp")
         for part in ("centroid", "solve", "total"):
             t = s[f"tetra3_{part}_ms"]
-            print(f"  {part:9s} {t:9.3f} {s[f'bindings_{part}_ms']:9.3f} ({t / s[f'bindings_{part}_ms']:4.1f}x)"
-                  f" {s[f'direct_{part}_ms']:8.3f} ({t / s[f'direct_{part}_ms']:4.1f}x)")
+            print(f"  {part:9s} {t:9.3f} {s[f'bindings_{part}_ms']:9.3f} ({t / s[f'bindings_{part}_ms']:4.1f}x)")
     print("all answers identical to tetra3:", out["all_same"])
     if a.json:
         with open(a.json, "w") as f:

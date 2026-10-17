@@ -41,31 +41,28 @@ pick, lens calibration, memory, real-time settings, and using C/C++ instead of P
 
 ## Benchmark: vs ESA's tetra3
 
-![startracker-cpp vs ESA tetra3: 4.4-4.6x faster per photo, 38-52x faster solver, same answers](docs/images/bench_vs_tetra3.png)
+![startracker-cpp vs ESA tetra3: 4.6x faster on photos that solve, 17x faster on photos with no match, same answers](docs/images/bench_vs_tetra3.png)
 
 The test set is 23 real night-sky photographs, every one giving the same answer as tetra3.
-Each photo was processed three ways, using the same star database, on one CPU thread:
+Each photo is processed start to finish: find the stars in the image, then identify them.
 
-| median per photo | ESA tetra3 (Python) | startracker-cpp via Python bindings | startracker-cpp from C++ |
+| median per photo | ESA tetra3 (Python) | startracker-cpp | speed-up |
 |---|---|---|---|
-| **12 photos that solve**: find stars | 40.2 ms | 9.6 ms (4.2×) | 9.9 ms (4.0×) |
-| solve | 4.60 ms | 0.122 ms (38×) | 0.105 ms (44×) |
-| **total** | **45.6 ms** | **9.8 ms (4.6×)** | **10.3 ms (4.4×)** |
-| **11 photos with no match**: find stars | 13.0 ms | 3.3 ms (4.0×) | 3.0 ms (4.4×) |
-| search until giving up | 82.8 ms | 1.74 ms (47×) | 1.61 ms (52×) |
-| **total** | **111 ms** | **5.7 ms (20×)** | **5.4 ms (21×)** |
+| **12 photos that solve** | **44.3 ms** | **9.7 ms** | **4.6×** |
+| └ finding stars | 40.0 ms | 9.5 ms | 4.2× |
+| └ identifying them | 4.4 ms | 0.12 ms | 36× |
+| **11 photos with no match** (worst case: searches everything) | **109 ms** | **6.6 ms** | **17×** |
 
 * **How it was measured:**
-  * Intel Xeon @ 2.80 GHz (4 vCPU container); each number is the median of 21 runs per photo.
-  * tetra3 is ESA's Python library at commit f9fa2eb (NumPy/SciPy, limited to one thread).
-* **Python bindings vs direct C++:**
-  * Both run the same compiled code, so they land within a few percent of each other.
-  * Run-to-run noise on this shared machine is larger than the binding overhead. That is why
-    the bindings sometimes measure faster.
-* **Where the time goes:** finding the stars in the image is about 95% of a lost-in-space
-  frame. While tracking, the library skips that full-image search.
+  * Intel Xeon @ 2.80 GHz (4 vCPU container), one thread each, the same star database.
+  * Each number is the median of 21 runs per photo.
+  * startracker-cpp was called through its Python bindings, so the call overhead counts
+    against it. Calling the library from C++ directly measured the same within noise.
+* **Where the time goes:** finding the stars in the image is about 95% of a frame. While
+  tracking, the library skips that full-image search and looks only at small windows
+  around the predicted stars (about 0.1 ms per frame).
 * **On arm64:** a GitHub-hosted Arm Neoverse N2 runner took 10.9 ms for a full 1280×960
-  frame, 0.03 ms for tracking windows, and 0.04 ms for a solve (synthetic database).
+  frame and 0.03 ms for tracking windows (synthetic database).
 * **Raspberry Pi:** no numbers yet. Run `scripts/raspi/run.sh --camera <yours> --bench`.
 * **Reproduce:**
   * `tests/parity/speed_vs_tetra3.py` runs the comparison;

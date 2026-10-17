@@ -4,27 +4,21 @@
  "reps": 21,
  "solved": {
   "n": 12,
-  "tetra3_centroid_ms": 40.17102599999589,
-  "tetra3_solve_ms": 4.599281500020425,
-  "tetra3_total_ms": 45.569863000025634,
-  "bindings_centroid_ms": 9.561516500014022,
-  "bindings_solve_ms": 0.1223494999749164,
-  "bindings_total_ms": 9.810289999961697,
-  "direct_centroid_ms": 9.928840000000001,
-  "direct_solve_ms": 0.104827,
-  "direct_total_ms": 10.263098
+  "tetra3_centroid_ms": 39.95224649997908,
+  "tetra3_solve_ms": 4.380236500082901,
+  "tetra3_total_ms": 44.34446150014537,
+  "bindings_centroid_ms": 9.496807499999704,
+  "bindings_solve_ms": 0.12253199997758202,
+  "bindings_total_ms": 9.69710800006851
  },
  "unsolved": {
   "n": 11,
-  "tetra3_centroid_ms": 12.98328500001844,
-  "tetra3_solve_ms": 82.79779999998027,
-  "tetra3_total_ms": 111.44996399991669,
-  "bindings_centroid_ms": 3.2547800000202187,
-  "bindings_solve_ms": 1.7436480000014853,
-  "bindings_total_ms": 5.698949000020548,
-  "direct_centroid_ms": 2.965997,
-  "direct_solve_ms": 1.607967,
-  "direct_total_ms": 5.4190439999999995
+  "tetra3_centroid_ms": 14.538220000076763,
+  "tetra3_solve_ms": 81.04369600005157,
+  "tetra3_total_ms": 108.99531299992304,
+  "bindings_centroid_ms": 3.6687589999928605,
+  "bindings_solve_ms": 1.7492429999492742,
+  "bindings_total_ms": 6.562782000173684
  },
  "all_same": true,
  "images": [
@@ -34,14 +28,10 @@
    "height": 768,
    "solved": true,
    "same": true,
-   "ra": 230.66765950344728,
-   "dec": 11.03560269646193,
-   "tetra3_centroid_ms": 38.28977299997405,
-   "tetra3_solve_ms": 4.393054000047414,
-   "bindings_centroid_ms": 10.215744000106497,
-   "bindings_solve_ms": 0.08025599993288779,
-   "direct_centroid_ms": 9.822793,
-   "direct_solve_ms": 0.093802
+   "tetra3_centroid_ms": 37.89062900000317,
+   "tetra3_solve_ms": 4.057644000113214,
+   "bindings_centroid_ms": 9.44670099988798,
+   "bindings_solve_ms": 0.08615699994152237
   },
   {
    "image": "2019-07-29T204726_Alt40_Azi-45_Try1",
@@ -49,14 +39,10 @@
    "height": 768,
    "solved": true,
    "same": true,
-   "ra": 172.36879972443555,
-   "dec": 57.64935845730414,
-   "tetra3_centroid_ms": 40.451550999932806,
-   "tetra3_solve_ms": 3.0507569999826956,
-   "bindings_centroid_ms": 9.7601359999544,
-   "bindings_solve_ms": 0.06791500004510453,
-   "direct_centroid_ms": 9.800548,
-   "direct_solve_ms": 0.055231
+   "tetra3_centroid_ms": 39.813204999973095,
+   "tetra3_solve_ms": 2.9678949999834003,
+   "bindings_centroid_ms": 9.338087000060113,
+   "bindings_solve_ms": 0.08384600005229004
   },
   {
    "image": "2019-07-29T204726_Alt40_Azi135_Try1",
@@ -64,14 +50,10 @@
    "height": 768,
    "solved": true,
    "same": true,
-   "ra": 296.7564773023332,
-   "dec": 11.314186744278182,
-   "tetra3_centroid_ms": 39.651614000035806,
-   "tetra3_solve_ms": 4.825525999990532,
-   "bindings_centroid_ms": 9.358459000054609,
-   "bindings_solve_ms": 0.13246100002106687,
-   "direct_centroid_ms": 10.390324,
-   "direct_solve_ms": 0.125222
+   "tetra3_centroid_ms": 39.61727399996562,
+   "tetra3_solve_ms": 4.7028290000525885,
+   "bindings_centroid_ms": 9.300689000156126,
+   "bindings_solve_ms": 0.14712699999108736
   },
   {
    "image": "2019-07-29T204726_Alt40_Azi45_Try1",
@@ -79,14 +61,10 @@
    "height": 768,
    "solved": true,
    "same": true,
-   "ra": 355.206673100811,
-   "dec": 58.153127905681096,
-   "tetra3_centroid_ms": 39.890501000058975,
-   "tetra3_solve_ms": 6.772084999965955,
-   "bindings_centroid_ms": 9.549213000013879,
-   "bindings_solve_ms": 0.24331599991000985,
-   "direct_centroid_ms": 10.034887,
-   "direct_solve_ms": 0.130043
+   "tetra3_centroid_ms": 41.524629000150526,
+   "tetra3_solve_ms": 7.184318000099665,
+   "bindings_centroid_ms": 9.672136000062892,
+   "bindings_solve_ms": 0.1618169999346719
   },
   {
    "image": "2019-07-29T204726_Alt60_Azi-135_Try1",
@@ -94,14 +72,10 @@
    "height": 768,
    "solved": true,
    "same": true,
-   "ra": 240.46420392141678,
-   "dec": 28.940185718598045,
-   "tetra3_centroid_ms": 42.601160999993226,
-   "tetra3_solve_ms": 1.4110119999486415,
-   "bindings_centroid_ms": 9.573820000014166,
-   "bindings_solve_ms": 0.09863499997209146,
-   "direct_centroid_ms": 10.380778,
-   "direct_solve_ms": 0.03953
+   "tetra3_centroid_ms": 40.09128799998507,
+   "tetra3_solve_ms": 1.5645969999695808,
+   "bindings_centroid_ms": 9.738857999991524,
+   "bindings_solve_ms": 0.04852000006394519
   },
   {
    "image": "2019-07-29T204726_Alt60_Azi-45_Try1",
@@ -109,14 +83,10 @@
    "height": 768,
    "solved": true,
    "same": true,
-   "ra": 212.21402279402895,
-   "dec": 64.20023850909088,
-   "tetra3_centroid_ms": 37.83758300005502,
-   "tetra3_solve_ms": 36.64921400002186,
-   "bindings_centroid_ms": 9.505224000008639,
-   "bindings_solve_ms": 0.7247750000942688,
-   "direct_centroid_ms": 9.668491,
-   "direct_solve_ms": 0.692775
+   "tetra3_centroid_ms": 39.36527499990916,
+   "tetra3_solve_ms": 35.96080399984203,
+   "bindings_centroid_ms": 8.986621000076411,
+   "bindings_solve_ms": 0.7439539999722911
   },
   {
    "image": "2019-07-29T204726_Alt60_Azi135_Try1",
@@ -124,14 +94,10 @@
    "height": 768,
    "solved": true,
    "same": true,
-   "ra": 286.43628204729373,
-   "dec": 28.94450191646465,
-   "tetra3_centroid_ms": 41.85915899995507,
-   "tetra3_solve_ms": 4.805508999993435,
-   "bindings_centroid_ms": 9.321656999986772,
-   "bindings_solve_ms": 0.14748799992503336,
-   "direct_centroid_ms": 9.448506,
-   "direct_solve_ms": 0.126307
+   "tetra3_centroid_ms": 39.29359300013857,
+   "tetra3_solve_ms": 5.075227000133964,
+   "bindings_centroid_ms": 9.517942000002222,
+   "bindings_solve_ms": 0.14569900008609693
   },
   {
    "image": "2019-07-29T204726_Alt60_Azi45_Try1",
@@ -139,14 +105,10 @@
    "height": 768,
    "solved": true,
    "same": true,
-   "ra": 314.6939066430938,
-   "dec": 64.22042837232176,
-   "tetra3_centroid_ms": 39.0100079999911,
-   "tetra3_solve_ms": 2.4665990000585225,
-   "bindings_centroid_ms": 9.32880099992417,
-   "bindings_solve_ms": 0.09311400003753079,
-   "direct_centroid_ms": 9.330146,
-   "direct_solve_ms": 0.063202
+   "tetra3_centroid_ms": 41.62163600017266,
+   "tetra3_solve_ms": 1.8723829998634756,
+   "bindings_centroid_ms": 9.475672999997187,
+   "bindings_solve_ms": 0.08437400015282037
   },
   {
    "image": "crappy",
@@ -154,14 +116,10 @@
    "height": 507,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 9.853757999962909,
-   "tetra3_solve_ms": 55.3647289999617,
-   "bindings_centroid_ms": 2.9171300000143674,
-   "bindings_solve_ms": 1.3669739998931618,
-   "direct_centroid_ms": 2.764558,
-   "direct_solve_ms": 1.260965
+   "tetra3_centroid_ms": 10.597088999929838,
+   "tetra3_solve_ms": 59.85547800014501,
+   "bindings_centroid_ms": 2.800149999984569,
+   "bindings_solve_ms": 1.3378280000324594
   },
   {
    "image": "discord_seoul3",
@@ -169,14 +127,10 @@
    "height": 1920,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 102.30413900001167,
-   "tetra3_solve_ms": 47.28988199997275,
-   "bindings_centroid_ms": 26.718069000025935,
-   "bindings_solve_ms": 0.6741969999666253,
-   "direct_centroid_ms": 28.661834,
-   "direct_solve_ms": 0.668667
+   "tetra3_centroid_ms": 97.16317900006288,
+   "tetra3_solve_ms": 49.747326999977304,
+   "bindings_centroid_ms": 27.04520199995386,
+   "bindings_solve_ms": 0.6546219999563618
   },
   {
    "image": "discord_seoul4",
@@ -184,14 +138,10 @@
    "height": 1701,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 71.61230099995919,
-   "tetra3_solve_ms": 4.605031999972198,
-   "bindings_centroid_ms": 24.159819000033167,
-   "bindings_solve_ms": 0.059365000083744235,
-   "direct_centroid_ms": 26.648093,
-   "direct_solve_ms": 0.051309
+   "tetra3_centroid_ms": 70.28980699988097,
+   "tetra3_solve_ms": 5.411205999962476,
+   "bindings_centroid_ms": 23.859218000097826,
+   "bindings_solve_ms": 0.06101700000726851
   },
   {
    "image": "hale_bopp",
@@ -199,14 +149,10 @@
    "height": 600,
    "solved": true,
    "same": true,
-   "ra": 42.45602894905486,
-   "dec": 45.79928139661113,
-   "tetra3_centroid_ms": 23.01468100006332,
-   "tetra3_solve_ms": 1.4430159999392345,
-   "bindings_centroid_ms": 6.610816000033992,
-   "bindings_solve_ms": 0.10460300006798207,
-   "direct_centroid_ms": 6.50798,
-   "direct_solve_ms": 0.022069
+   "tetra3_centroid_ms": 21.11633599997731,
+   "tetra3_solve_ms": 1.4934939999875496,
+   "bindings_centroid_ms": 6.395847000021604,
+   "bindings_solve_ms": 0.04742500004795147
   },
   {
    "image": "jan1_g90_e100ms",
@@ -214,14 +160,10 @@
    "height": 960,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 49.569883000003756,
-   "tetra3_solve_ms": 159.14553300001444,
-   "bindings_centroid_ms": 15.892150000013316,
-   "bindings_solve_ms": 5.7440550000364965,
-   "direct_centroid_ms": 15.954933,
-   "direct_solve_ms": 5.046859
+   "tetra3_centroid_ms": 48.274966000008135,
+   "tetra3_solve_ms": 159.99927600000774,
+   "bindings_centroid_ms": 16.06685899992044,
+   "bindings_solve_ms": 5.901388999973278
   },
   {
    "image": "jan1_g90_e50ms",
@@ -229,14 +171,10 @@
    "height": 960,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 49.03155499994227,
-   "tetra3_solve_ms": 116.52332999994996,
-   "bindings_centroid_ms": 16.51669199998196,
-   "bindings_solve_ms": 2.5952649999680943,
-   "direct_centroid_ms": 15.871459,
-   "direct_solve_ms": 2.454832
+   "tetra3_centroid_ms": 45.97236300014629,
+   "tetra3_solve_ms": 129.89928000001782,
+   "bindings_centroid_ms": 15.902612999980192,
+   "bindings_solve_ms": 3.045096999812813
   },
   {
    "image": "orion2",
@@ -244,14 +182,10 @@
    "height": 507,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 10.677167000039844,
-   "tetra3_solve_ms": 82.79779999998027,
-   "bindings_centroid_ms": 2.9286679999813714,
-   "bindings_solve_ms": 1.7436480000014853,
-   "direct_centroid_ms": 2.733447,
-   "direct_solve_ms": 1.607967
+   "tetra3_centroid_ms": 10.55913100003636,
+   "tetra3_solve_ms": 81.04369600005157,
+   "bindings_centroid_ms": 3.6687589999928605,
+   "bindings_solve_ms": 1.7492429999492742
   },
   {
    "image": "orion_belt",
@@ -259,14 +193,10 @@
    "height": 512,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 10.984660999952212,
-   "tetra3_solve_ms": 100.46530299996448,
-   "bindings_centroid_ms": 3.015047999952003,
-   "bindings_solve_ms": 2.5646960000358376,
-   "direct_centroid_ms": 2.92972,
-   "direct_solve_ms": 2.489324
+   "tetra3_centroid_ms": 10.811853999939558,
+   "tetra3_solve_ms": 98.18345899998349,
+   "bindings_centroid_ms": 4.4485550001809315,
+   "bindings_solve_ms": 3.2294159998400573
   },
   {
    "image": "orion_trees",
@@ -274,14 +204,10 @@
    "height": 507,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 10.49554899998384,
-   "tetra3_solve_ms": 109.75374200006627,
-   "bindings_centroid_ms": 2.9956600000105027,
-   "bindings_solve_ms": 2.703289000010045,
-   "direct_centroid_ms": 2.897575,
-   "direct_solve_ms": 2.402187
+   "tetra3_centroid_ms": 14.538220000076763,
+   "tetra3_solve_ms": 104.59038799990594,
+   "bindings_centroid_ms": 2.8741430000991386,
+   "bindings_solve_ms": 2.6221550001537253
   },
   {
    "image": "pleiades",
@@ -289,14 +215,10 @@
    "height": 512,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 11.004118000073504,
-   "tetra3_solve_ms": 54.19137499995941,
-   "bindings_centroid_ms": 3.080236999949193,
-   "bindings_solve_ms": 0.8329439999670285,
-   "direct_centroid_ms": 2.829928,
-   "direct_solve_ms": 0.777403
+   "tetra3_centroid_ms": 10.683176999918942,
+   "tetra3_solve_ms": 54.05733600014173,
+   "bindings_centroid_ms": 2.9551979998814204,
+   "bindings_solve_ms": 0.8752139999614883
   },
   {
    "image": "roof",
@@ -304,14 +226,10 @@
    "height": 507,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 12.98328500001844,
-   "tetra3_solve_ms": 58.95079699996586,
-   "bindings_centroid_ms": 3.3131669999875157,
-   "bindings_solve_ms": 1.3407620000407405,
-   "direct_centroid_ms": 2.965997,
-   "direct_solve_ms": 1.273272
+   "tetra3_centroid_ms": 13.671663999957673,
+   "tetra3_solve_ms": 62.788378000050216,
+   "bindings_centroid_ms": 3.121844000133933,
+   "bindings_solve_ms": 1.3511199999811652
   },
   {
    "image": "test2_g100_e50ms",
@@ -319,14 +237,10 @@
    "height": 960,
    "solved": true,
    "same": true,
-   "ra": 282.92960836849875,
-   "dec": 20.793129133314533,
-   "tetra3_centroid_ms": 51.27801999992698,
-   "tetra3_solve_ms": 2.8998480000836935,
-   "bindings_centroid_ms": 15.73894399996334,
-   "bindings_solve_ms": 0.11641100002179883,
-   "direct_centroid_ms": 16.080927,
-   "direct_solve_ms": 0.100008
+   "tetra3_centroid_ms": 48.55732400005763,
+   "tetra3_solve_ms": 3.3647699999619363,
+   "bindings_centroid_ms": 15.33728100002918,
+   "bindings_solve_ms": 0.12202399989291735
   },
   {
    "image": "test_5mp_g100_e50ms",
@@ -334,14 +248,10 @@
    "height": 960,
    "solved": true,
    "same": true,
-   "ra": 303.77994547474157,
-   "dec": -1.2890550739399074,
-   "tetra3_centroid_ms": 47.49132599999939,
-   "tetra3_solve_ms": 10.081549000005907,
-   "bindings_centroid_ms": 16.06821099994704,
-   "bindings_solve_ms": 0.3457669999988866,
-   "direct_centroid_ms": 16.302262,
-   "direct_solve_ms": 0.294675
+   "tetra3_centroid_ms": 49.27201700002115,
+   "tetra3_solve_ms": 10.306376000016826,
+   "bindings_centroid_ms": 15.171205000115151,
+   "bindings_solve_ms": 0.3239689999645634
   },
   {
    "image": "tree",
@@ -349,14 +259,10 @@
    "height": 512,
    "solved": false,
    "same": true,
-   "ra": null,
-   "dec": null,
-   "tetra3_centroid_ms": 16.027908000069147,
-   "tetra3_solve_ms": 106.20272200003456,
-   "bindings_centroid_ms": 3.2547800000202187,
-   "bindings_solve_ms": 3.349766999917847,
-   "direct_centroid_ms": 3.141471,
-   "direct_solve_ms": 3.341676
+   "tetra3_centroid_ms": 15.411498000048596,
+   "tetra3_solve_ms": 104.5955579998008,
+   "bindings_centroid_ms": 3.2826159999785887,
+   "bindings_solve_ms": 3.280166000195095
   },
   {
    "image": "virgo",
@@ -364,14 +270,10 @@
    "height": 1080,
    "solved": true,
    "same": true,
-   "ra": 189.2478260178166,
-   "dec": 5.958053264599238,
-   "tetra3_centroid_ms": 87.11773400000311,
-   "tetra3_solve_ms": 5.941171000017675,
-   "bindings_centroid_ms": 26.15292699999827,
-   "bindings_solve_ms": 0.12828799992803397,
-   "direct_centroid_ms": 28.100802,
-   "direct_solve_ms": 0.109646
+   "tetra3_centroid_ms": 91.93668400007482,
+   "tetra3_solve_ms": 6.910180999966542,
+   "bindings_centroid_ms": 26.682907999884264,
+   "bindings_solve_ms": 0.12304000006224669
   }
  ]
 }

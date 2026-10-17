@@ -29,59 +29,36 @@ def main():
         font_manager.fontManager.addfont(a.font)
         plt.rcParams["font.family"] = font_manager.FontProperties(fname=a.font).get_name()
 
-    s, u = d["solved"], d["unsolved"]
-    keys = ["tetra3", "bindings", "direct"]
-    names = ["ESA tetra3\n(Python)", "startracker-cpp\n(Python bindings)", "startracker-cpp\n(C++ direct)"]
-    dark = ["#9a9a9a", "#2a9d8f", "#e76f51"]
-    light = ["#cfcfcf", "#8fd1c7", "#f4b29f"]
+    keys = ["tetra3", "bindings"]
+    names = ["ESA tetra3", "startracker-cpp"]
+    dark = ["#9a9a9a", "#2a9d8f"]
+    light = ["#cfcfcf", "#8fd1c7"]
+    panels = [(d["solved"], "photos that solve"), (d["unsolved"], "photos with no match\n(searches everything: the worst case)")]
     with plt.xkcd(scale=1, length=120, randomness=2):
         if a.font:
             plt.rcParams["font.family"] = font_manager.FontProperties(fname=a.font).get_name()
-        fig, axes = plt.subplots(1, 2, figsize=(12.5, 5.2), gridspec_kw={"width_ratios": [1.2, 1]})
-
-        # Left: a full lost-in-space frame (find stars + solve) on photos that solve.
-        ax = axes[0]
-        cen = [s[f"{k}_centroid_ms"] for k in keys]
-        sol = [s[f"{k}_solve_ms"] for k in keys]
-        tot = [s[f"{k}_total_ms"] for k in keys]
-        y = range(3)
-        ax.barh(y, cen, color=dark, edgecolor="black")
-        ax.barh(y, sol, left=cen, color=light, edgecolor="black")
-        for i in y:
-            label = f"{tot[i]:.1f} ms" + ("" if i == 0 else f"  ({tot[0] / tot[i]:.1f}x faster)")
-            ax.text(cen[i] + sol[i] + 1, i, label, va="center", fontsize=12)
-        ax.set_yticks(list(y))
-        ax.set_yticklabels(names, fontsize=11)
-        ax.set_xlim(0, tot[0] * 1.55)
-        ax.set_xlabel("milliseconds per photo (less is better)")
-        ax.set_title(f"one photo, start to finish\n({s['n']} real night-sky photos that solve)", fontsize=13)
-        ax.text(tot[0] * 1.12, 1.55, "dark = finding stars\nlight = solving", fontsize=10)
-        ax.invert_yaxis()
-
-        # Right: the solver alone, for photos that solve and photos with no match.
-        ax = axes[1]
-        groups = ["solves", "no match\n(searches\neverything)"]
-        h = 0.26
-        for j, k in enumerate(keys):
-            vals = [s[f"{k}_solve_ms"], u[f"{k}_solve_ms"]]
-            pos = [g + (j - 1) * h for g in range(2)]
-            ax.barh(pos, vals, height=h * 0.95, color=dark[j], edgecolor="black", label=names[j].replace("\n", " "))
-            for g in range(2):
-                ref = [s, u][g]["tetra3_solve_ms"]
-                txt = f"{vals[g]:.1f} ms" if j == 0 else f"{vals[g]:.2f} ms ({ref / vals[g]:.0f}x)"
-                ax.text(vals[g] + 1.5, pos[g], txt, va="center", fontsize=10)
-        ax.set_yticks([0, 1])
-        ax.set_yticklabels(groups)
-        ax.set_xlim(0, u["tetra3_solve_ms"] * 1.5)
-        ax.set_xlabel("milliseconds per solve")
-        ax.set_title("just the solver", fontsize=13)
-        ax.legend(loc="upper right", fontsize=9)
-        ax.invert_yaxis()
-
-        fig.suptitle("same answers as ESA's tetra3 on every photo, just faster", fontsize=16)
+        fig, axes = plt.subplots(1, 2, figsize=(12, 4.4))
+        for ax, (s, title) in zip(axes, panels):
+            cen = [s[f"{k}_centroid_ms"] for k in keys]
+            sol = [s[f"{k}_solve_ms"] for k in keys]
+            tot = [s[f"{k}_total_ms"] for k in keys]
+            ax.barh([0, 1], cen, color=dark, edgecolor="black", height=0.6)
+            ax.barh([0, 1], sol, left=cen, color=light, edgecolor="black", height=0.6)
+            for i in range(2):
+                label = f"{tot[i]:.1f} ms" + ("" if i == 0 else f"  ({tot[0] / tot[i]:.1f}x faster)")
+                ax.text(cen[i] + sol[i] + tot[0] * 0.02, i, label, va="center", fontsize=12)
+            ax.set_yticks([0, 1])
+            ax.set_yticklabels(names)
+            ax.set_xlim(0, tot[0] * 1.35)
+            ax.set_xlabel("milliseconds per photo, start to finish")
+            ax.set_title(f"{s['n']} {title}", fontsize=13)
+            ax.invert_yaxis()
+        fig.text(0.5, 0.86, "dark = finding the stars in the image,  light = identifying them (solving)",
+                 ha="center", fontsize=11)
+        fig.suptitle("same answers as ESA's tetra3 on 23 real night-sky photos, just faster", fontsize=15)
         fig.text(0.5, 0.005, f"median of {d['reps']} runs per photo, one thread each, same database; "
-                 f"{d['host']}", ha="center", fontsize=9)
-        fig.tight_layout(rect=(0, 0.03, 1, 0.95))
+                 f"startracker-cpp called through its Python bindings; {d['host']}", ha="center", fontsize=9)
+        fig.tight_layout(rect=(0, 0.03, 1, 0.86))
         fig.savefig(a.out, dpi=110)
     print("wrote", a.out)
 
