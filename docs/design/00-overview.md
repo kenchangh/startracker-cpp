@@ -1,7 +1,8 @@
 # Design overview and reference-source findings
 
-Status: **draft, awaiting review**. This note records what was learned from the reference
-sources and the project-wide decisions every phase depends on.
+Status: **approved 2026-10-27.** The owner approved ESA-primary and asked that the remaining
+proposals be decided; §8 records the decisions. This note records what was learned from the
+reference sources and the project-wide decisions every phase depends on.
 
 **Primary algorithm and parity target: ESA tetra3 @ f9fa2eb.** cedar-solve's changes are
 offered as optional, selectable variants; ESA behaviour is always the default.
@@ -116,9 +117,9 @@ beyond the truncated length and raises `IndexError`. Our `breadth_first` variant
 over the trimmed set; this is a documented divergence from cedar-solve. It does not affect
 the ESA default.
 
-## 4. ESA quirks: decisions needed
+## 4. ESA quirks and how we handle them
 
-Found by reading; confirmed by running in phase 3. Proposal given for each.
+Found by reading; to be confirmed by running in phase 3. All proposals below are adopted (§8).
 
 | # | Quirk | Proposal |
 |---|---|---|
@@ -167,9 +168,9 @@ test: first-index (not nearest) match assignment, image-then-catalog dedup, near
   unlicensed; Hipparcos comes from CDS. None of it is committed; `tools/fetch_fixtures.py`
   downloads it and checks pinned SHA-256 sums.
 
-## 7. Project-wide conventions (proposed)
+## 7. Project-wide conventions
 
-* Namespace `st`; library target `st_core`. Final project name is your call.
+* Namespace `st`; library target `st_core`.
 * Pixel coordinates follow tetra3: origin at the top-left corner of the top-left pixel (pixel
   centres at +0.5), image centre at (w/2, h/2). Public API uses (x, y); the parity layer
   converts to tetra3's (y, x).
@@ -177,9 +178,25 @@ test: first-index (not nearest) match assignment, image-then-catalog dedup, near
   * float32: pixel coordinates, centroiding, edge ratios.
   * Catalog unit vectors **stored** as float32, as tetra3 stores them (~6e-8 rad, 0.012"
     quantization, far below expected accuracy; halves the star table). Promoted to double
-    for all attitude math. **Your brief said double for catalog vectors — please confirm.**
+    for all attitude math. Decided in favour of float32 for memory and cache efficiency
+    (§8), although the brief originally said double.
   * double: rotation/quaternion, Wahba/SVD, FOV/distortion refinement, binomial
     probability, rate estimation, time.
 * Determinism: same input + same config → same output bits on x86-64 and ARM64
   (`-ffp-contract=off`, no fast-math, no unordered containers, fixed iteration orders).
 * Minimum compilers: GCC 11, Clang 14.
+
+## 8. Decisions (2026-10-27)
+
+| Topic | Decision |
+|---|---|
+| Parity target | ESA tetra3 @ f9fa2eb; cedar-solve behaviour only through the §3 options |
+| Quirks (a)-(i) | Proposals in §4 adopted as written |
+| Variant set | §3.1 as listed. Statuses are always our `Status` codes (`kNoMatch`, `kTimeout`, `kWorkBudgetExhausted`, `kCancelled`, `kTooFewStars`) |
+| Time bound | Deterministic work budget first (`kWorkBudgetExhausted`), optional `Clock` deadline (`kTimeout`) |
+| Catalog vectors | float32 storage (owner: "whatever is more efficient"); double for all attitude math |
+| Naming | Namespace `st`, target `st_core` (alias `st::core`) |
+| Pixel convention | tetra3's (§7) |
+| Compilers | GCC >= 11, Clang >= 14 (with libstdc++ <= 12 for Clang 14) |
+| Parity tolerance | §5 as written |
+| Test framework | GoogleTest 1.15.2, pinned by commit |

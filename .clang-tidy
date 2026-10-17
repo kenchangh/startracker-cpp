@@ -1,0 +1,21 @@
+# Run on the core only (src/, include/st). CI runs it with --warnings-as-errors.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  cert-*,
+  -cert-err58-cpp,
+  clang-analyzer-*,
+  cppcoreguidelines-pro-type-member-init,
+  cppcoreguidelines-slicing,
+  misc-*,
+  -misc-non-private-member-variables-in-classes,
+  -misc-include-cleaner,
+  -misc-no-recursion,
+  performance-*,
+  readability-braces-around-statements,
+  readability-implicit-bool-conversion
+CheckOptions:
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: 2
+HeaderFilterRegex: '.*/include/st/.*'

@@ -1,0 +1,64 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": { "ST_STRICT": "ON", "ST_BUILD_TESTS": "ON" }
+    },
+    {
+      "name": "dev",
+      "displayName": "Debug, asserts, -Werror",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "ST_ASSERTS": "ON", "ST_WERROR": "ON" }
+    },
+    {
+      "name": "release",
+      "displayName": "Release (-O3, asserts off)",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "ST_ASSERTS": "OFF", "ST_WERROR": "ON" }
+    },
+    {
+      "name": "release-asserts",
+      "displayName": "Release with ST_ASSERT on",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "ST_ASSERTS": "ON", "ST_WERROR": "ON" }
+    },
+    {
+      "name": "asan",
+      "displayName": "ASan + UBSan",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo", "ST_ASSERTS": "ON", "ST_WERROR": "ON",
+        "ST_SANITIZE": "address,undefined"
+      }
+    },
+    {
+      "name": "tsan",
+      "displayName": "TSan",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo", "ST_ASSERTS": "ON", "ST_WERROR": "ON",
+        "ST_SANITIZE": "thread"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "dev", "configurePreset": "dev" },
+    { "name": "release", "configurePreset": "release" },
+    { "name": "release-asserts", "configurePreset": "release-asserts" },
+    { "name": "asan", "configurePreset": "asan" },
+    { "name": "tsan", "configurePreset": "tsan" }
+  ],
+  "testPresets": [
+    { "name": "base", "hidden": true, "output": { "outputOnFailure": true }, "execution": { "noTestsAction": "error" } },
+    { "name": "dev", "inherits": "base", "configurePreset": "dev" },
+    { "name": "release", "inherits": "base", "configurePreset": "release" },
+    { "name": "release-asserts", "inherits": "base", "configurePreset": "release-asserts" },
+    { "name": "asan", "inherits": "base", "configurePreset": "asan" },
+    { "name": "tsan", "inherits": "base", "configurePreset": "tsan" }
+  ]
+}

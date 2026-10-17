@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: Apache-2.0
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: ${{ matrix.os }} ${{ matrix.compiler }} ${{ matrix.preset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+        compiler: [gcc-14, clang-18]
+        preset: [dev, release]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14 clang-18
+      - run: tools/ci.sh ${{ matrix.preset }} ${{ matrix.compiler }}
+
+  # Oldest supported toolchain (GCC 11, Clang 14, libstdc++ 11) in the docker/Dockerfile image.
+  container-jammy:
+    name: jammy container ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t startracker-dev docker/
+      - name: GCC 11 and Clang 14, dev and release
+        run: |
+          docker run --rm -v "$PWD":/src -w /src startracker-dev bash -c '
+            git config --global --add safe.directory /src
+            for c in gcc-11 clang-14; do
+              for p in dev release; do tools/ci.sh $p $c; done
+            done'
+
+  sanitizers:
+    name: ${{ matrix.preset }} ${{ matrix.compiler }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [asan, tsan]
+        compiler: [clang-18, gcc-14]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14 clang-18 libclang-rt-18-dev
+      # Sanitizer runtimes fail on high-entropy ASLR (vm.mmap_rnd_bits=32 on recent kernels).
+      - run: sudo sysctl vm.mmap_rnd_bits=28
+      - run: tools/ci.sh ${{ matrix.preset }} ${{ matrix.compiler }}
+
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install ninja
+      - run: tools/ci.sh dev
+
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y clang-format-18
+      - run: clang-format-18 --dry-run --Werror $(git ls-files '*.cpp' '*.hpp')
+
+  clang-tidy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build clang-18 clang-tidy-18
+      - run: CC=clang-18 CXX=clang++-18 cmake --preset dev
+      - run: cmake --build --preset dev --target st_core st_strict_headers
+      - name: clang-tidy on the core and every public header
+        run: run-clang-tidy-18 -p build/dev -quiet -warnings-as-errors='*' 'src/core/|strict_headers/'

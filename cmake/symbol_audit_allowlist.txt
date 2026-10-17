@@ -1,0 +1,1 @@
+# One symbol per line, followed by a justification comment. Expected to stay empty.

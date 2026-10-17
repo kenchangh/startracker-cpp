@@ -1,6 +1,7 @@
 # Phase 1 design note: repo skeleton, build, CI, containers, no-alloc harness
 
-Status: **draft, awaiting review**. Nothing in this phase is implemented yet.
+Status: **approved 2026-10-27, implemented.** §9 lists where the implementation differs from
+the draft.
 
 Scope: everything later phases stand on. No star-tracker algorithms in this phase.
 
@@ -37,11 +38,11 @@ so we provide our own minimal type.
 
 ```cpp
 namespace st {
-enum class Status : std::uint16_t {
+enum class Status : std::uint8_t {
   kOk = 0,
   kInvalidArgument, kCapacityExceeded, kArenaExhausted, kNotInitialized,
   kCorruptData, kChecksumMismatch, kVersionMismatch, kUnsupported,
-  kTooFewStars, kNoMatch, kTimeout, kIterationLimit, kCancelled,
+  kTooFewStars, kNoMatch, kTimeout, kWorkBudgetExhausted, kCancelled,
   kIoError,       // only produced by host-side helpers / sources, never by pure algorithms
 };
 const char* to_string(Status) noexcept;  // static strings, no allocation
@@ -106,8 +107,8 @@ under `ST_ASSERT`, `push_back`/`emplace_back` return `bool` (false when full, `[
 `SpscQueue` design: head and tail indices as `std::atomic<std::uint32_t>` on separate
 64-byte cache lines (`alignas(64)`; Cortex-A72/A76 and Carmel all use 64-byte lines), producer
 caches the consumer index and vice versa to avoid cache-line ping-pong. Push: relaxed load of
-own index, acquire load of the other, release store. Wait-free, O(1). Capacity `2^k`, one
-slot sacrificed (usable `2^k - 1`), indices wrap with a mask. Tested under TSan and with a
+own index, acquire load of the other, release store. Wait-free, O(1). Capacity `2^k`; indices are
+free-running 32-bit counters (occupancy = head - tail), so all `2^k` slots are usable. Tested under TSan and with a
 two-thread stress test (10^7 items, checks order and no loss).
 
 ### 2.5 Clock
@@ -218,3 +219,32 @@ familiarity, CTest integration. Alternative considered: doctest (lighter, no dea
 * Symbol audit and strict-header checks pass.
 * TSan stress test of `SpscQueue` passes.
 * One commit: "Phase 1: skeleton, build, CI, containers, no-alloc harness".
+
+## 9. As built (differences from the draft above)
+
+* `Status` is `uint8_t` (clang-tidy `performance-enum-size`; fewer than 256 codes).
+  `kIterationLimit` became `kWorkBudgetExhausted` to match the work-budget decision.
+* `SpscQueue` uses free-running indices and all `2^k` slots (draft: one slot sacrificed).
+* `Arena` also has `allocate_uninit<T>` (O(1) for trivial T, for buffers written before read)
+  and an `ArenaScope` RAII helper. `allocate` after `freeze()` asserts, and returns
+  `kArenaExhausted` when asserts are off.
+* `Clock` has a protected non-virtual destructor: a virtual one would emit a deleting
+  destructor referencing `operator delete`, which the symbol audit forbids.
+* Allocation guard backends: glibc interposition (authoritative), the sanitizer allocator
+  hook under ASan/TSan (the sanitizer owns malloc there), operator new only on macOS.
+  TSan's `aligned_alloc` bypasses the sanitizer hook; that one check is skipped under TSan.
+  `ST_ALLOC_GUARD_TRACE=1` prints a stack per counted allocation in ASan builds.
+* Unit tests run inside a counting guard fixture (any allocation fails the test); abort mode
+  is covered by death tests. The SPSC stress test checks zero allocations on both threads.
+* Symbol audit has a negative control library that must be reported.
+* Compile-fail tests: zero-capacity `FixedVector`, non-power-of-two `RingBuffer`, arena of a
+  non-trivially-destructible type, `Result<Status>`, non-trivially-copyable `SpscQueue`, and
+  ignored `[[nodiscard]]` results.
+* Extra preset `release-asserts`. `tools/ci.sh <preset> [compiler]` is the single entry point
+  for CI and local runs.
+* CI also runs clang-tidy (core + every public header, warnings as errors), and the GCC 11 /
+  Clang 14 jobs run inside `docker/Dockerfile` (Ubuntu 22.04) on x86-64 and ARM64, because
+  Clang 14 cannot parse libstdc++ 13's `<chrono>`.
+
+Measured locally (Linux x86-64 container; GCC 11.5/13.3, Clang 18.1): all tests pass in
+Debug, Release, ASan+UBSan and TSan configurations. Clang 14 is covered by CI only.

@@ -1,0 +1,46 @@
+startracker-cpp
+Copyright 2026 The startracker-cpp authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The lost-in-space algorithm, its database format and its default parameters follow
+tetra3 by the European Space Agency, with optional variants following Cedar Solve.
+Files containing code derived from either project say so in their header.
+
+-------------------------------------------------------------------------------
+tetra3 (https://github.com/esa/tetra3)
+    Copyright 2019 the European Space Agency
+    Licensed under the Apache License, Version 2.0.
+
+-------------------------------------------------------------------------------
+Cedar Solve (https://github.com/smroid/cedar-solve)
+    Copyright 2023 Steven Rosenthal smr@dt3.org
+    Licensed under the Apache License, Version 2.0.
+    "Cedar" is a trademark of its owner; this project is not affiliated with or
+    endorsed by Cedar Solve.
+
+-------------------------------------------------------------------------------
+Tetra (https://github.com/brownj4/Tetra), the original algorithm on which tetra3
+is based, is distributed under the following license:
+
+The MIT License (MIT)
+
+Copyright (c) 2016 brownj4
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
