@@ -54,8 +54,8 @@ struct TrackerConfig {
   double match_radius_px = 4.0;       // base search radius
   double rate_uncertainty = 0.002;    // rad/s; widens the radius by rate_uncertainty*dt*f
   std::uint32_t min_matches = 5;
-  double max_rmse_arcsec = 60.0;
-  double outlier_sigma = 3.0;      // residual cut for the second Wahba pass
+  double max_rmse_arcsec = 60.0;   // fit quality gate (never tighter than one pixel)
+  double outlier_sigma = 3.0;      // residual cuts: x median residual, then x inlier RMS
   double centroid_sigma_px = 0.2;  // floor of the per-star noise for the covariance
   std::uint32_t lost_after_failures = 2;
   std::uint32_t rate_window = 16;  // attitudes in the rate least-squares fit (2..32)
@@ -139,6 +139,7 @@ class Tracker {
   std::span<Vec3> meas_;
   std::span<Vec3> ref_;
   std::span<double> resid_;
+  std::span<double> sorted_;  // scratch for the median residual
   std::span<Centroid> lis_buf_;
   std::uint32_t npred_ = 0;
   TrackMode mode_ = TrackMode::kLost;

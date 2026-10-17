@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include <atomic>
+#include <cmath>
 #include <cstdio>
 #include <memory>
 #include <thread>

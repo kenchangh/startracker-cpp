@@ -36,7 +36,7 @@ bool invert3(const Mat3& a, Mat3& out) noexcept {
 
 std::size_t Tracker::workspace_bytes(const TrackerConfig& c) noexcept {
   const std::size_t p = c.max_predicted, n = c.max_centroids;
-  return p * (sizeof(Predicted) + sizeof(Pair) + 2 * sizeof(Vec3) + sizeof(double)) +
+  return p * (sizeof(Predicted) + sizeof(Pair) + 2 * sizeof(Vec3) + 2 * sizeof(double)) +
          n * (1 + sizeof(Centroid)) + std::size_t{8} * 64;
 }
 
@@ -59,6 +59,7 @@ Result<Tracker> Tracker::create(const SkyIndex& index, LostInSpaceSolver* lis,
   ST_TRY_ASSIGN(t.meas_, arena.allocate<Vec3>(cfg.max_predicted));
   ST_TRY_ASSIGN(t.ref_, arena.allocate<Vec3>(cfg.max_predicted));
   ST_TRY_ASSIGN(t.resid_, arena.allocate<double>(cfg.max_predicted));
+  ST_TRY_ASSIGN(t.sorted_, arena.allocate<double>(cfg.max_predicted));
   ST_TRY_ASSIGN(t.lis_buf_, arena.allocate<Centroid>(cfg.max_centroids));
   // Half diagonal FOV from the corners of the calibrated camera.
   const double w = cfg.camera.width, h = cfg.camera.height;
@@ -179,19 +180,35 @@ Status Tracker::refine(const Quat& q_pred, double radius_px, std::span<const Cen
   double rms = 0;
   solve(np, rot, rms);
   const double pix_angle = 1.0 / cfg_.camera.fx;
-  const double cut = std::max(cfg_.outlier_sigma * rms, 3.0 * cfg_.centroid_sigma_px * pix_angle);
-  std::uint32_t keep = 0;
-  for (std::uint32_t k = 0; k < np; ++k) {
-    if (resid_[k] <= cut) {
-      meas_[keep] = meas_[k];
-      ref_[keep] = ref_[k];
-      pairs_[keep] = pairs_[k];
-      ++keep;
+  const double floor_cut = 3.0 * cfg_.centroid_sigma_px * pix_angle;
+  auto reject = [&](std::uint32_t n, double cut) {
+    std::uint32_t keep = 0;
+    for (std::uint32_t k = 0; k < n; ++k) {
+      if (resid_[k] <= cut) {
+        meas_[keep] = meas_[k];
+        ref_[keep] = ref_[k];
+        pairs_[keep] = pairs_[k];
+        resid_[keep] = resid_[k];
+        ++keep;
+      }
     }
-  }
+    return keep;
+  };
+  // Pass 1: cut at outlier_sigma x the median residual. A few wrong pairs (e.g. a predicted star
+  // with no window grabbing a neighbour's centroid) inflate the RMS but not the median.
+  for (std::uint32_t k = 0; k < np; ++k) sorted_[k] = resid_[k];
+  const auto mid = sorted_.begin() + np / 2;
+  std::nth_element(sorted_.begin(), mid, sorted_.begin() + np);
+  std::uint32_t keep = reject(np, std::max(cfg_.outlier_sigma * *mid, floor_cut));
   if (keep < cfg_.min_matches) return Status::kNoMatch;
   if (keep < np) solve(keep, rot, rms);
-  if (rms / kArcsecToRad > cfg_.max_rmse_arcsec) return Status::kNoMatch;
+  // Pass 2: the usual cut at outlier_sigma x RMS of the inliers.
+  const std::uint32_t keep1 = keep;
+  keep = reject(keep1, std::max(cfg_.outlier_sigma * rms, floor_cut));
+  if (keep < cfg_.min_matches) return Status::kNoMatch;
+  if (keep < keep1) solve(keep, rot, rms);
+  // Quality gate: max_rmse_arcsec, but never tighter than one pixel (coarse wide-field cameras).
+  if (rms > std::max(cfg_.max_rmse_arcsec * kArcsecToRad, pix_angle)) return Status::kNoMatch;
   // Covariance: sigma^2 * (sum (I - b b^T))^-1 in the camera frame (QUEST approximation).
   const double sigma = std::max(rms, cfg_.centroid_sigma_px * pix_angle);
   Mat3 f;

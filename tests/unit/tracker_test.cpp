@@ -146,6 +146,33 @@ TEST_F(TrackerTest, AcquiresTracksAndEstimatesRate) {
   EXPECT_EQ(tracked, 59);
 }
 
+// Coarse pixels (~88"/px): a few centroids paired with the wrong star (3 px off, inside the match
+// radius) must be rejected by the median-based cut; an RMS-based cut alone keeps them and the
+// fit fails the quality gate. Seen with ROI tracking on real star fields.
+TEST_F(TrackerTest, RejectsWrongPairsWithCoarsePixels) {
+  const Database& db = synthetic_db().db;
+  TrackerConfig cfg;
+  cfg.camera = CameraModel::ideal(728, 544, 17.8 * kDegToRad);
+  Tracker tr = make(cfg);
+  auto cam = CameraModel::create(cfg.camera);
+  ASSERT_TRUE(cam.ok());
+  std::mt19937_64 g(9);
+  const Quat q = attitude_from_radec_roll(2.2, -0.4, 0.9);
+  AttitudeSolution s;
+  tr.set_attitude(0, q);
+  auto cents = observe(db, q, cam.value(), 0.1, g);
+  ASSERT_GE(cents.size(), 30u);
+  cents.resize(30);
+  for (std::size_t i = 20; i < 24; ++i) cents[i] = {cents[i].x + 2.5, cents[i].y - 2.0};
+  ASSERT_EQ(tr.update(100'000'000, cents, s), Status::kOk);
+  EXPECT_EQ(s.matches, 26u);
+  EXPECT_LT(s.rmse_arcsec, 25.0);
+  // Error consistent with the reported covariance (0.1 px noise at ~88"/px).
+  const double sig =
+      std::sqrt(s.covariance.m[0][0] + s.covariance.m[1][1] + s.covariance.m[2][2]) / kArcsecToRad;
+  EXPECT_LT(angle_between(s.q_cam_icrs, q) / kArcsecToRad, 3.0 * sig);
+}
+
 TEST_F(TrackerTest, LosesAndReacquires) {
   const Database& db = synthetic_db().db;
   TrackerConfig cfg;
