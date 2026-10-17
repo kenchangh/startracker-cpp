@@ -6,9 +6,10 @@ add_library(st_tools STATIC
   cpp/generator.cpp
   cpp/pgm.cpp
   cpp/render.cpp
+  cpp/sequence.cpp
 )
 target_include_directories(st_tools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/cpp)
-target_link_libraries(st_tools PUBLIC st_core)
+target_link_libraries(st_tools PUBLIC st_core st_platform)
 st_apply_test_options(st_tools)
 
 add_executable(st_dbtool cpp/dbtool_main.cpp)
@@ -30,3 +31,11 @@ st_apply_test_options(st_render)
 add_executable(st_sweep cpp/sweep_main.cpp)
 target_link_libraries(st_sweep PRIVATE st_tools st_platform)
 st_apply_test_options(st_sweep)
+
+add_executable(st_replay cpp/replay_main.cpp)
+target_link_libraries(st_replay PRIVATE st_tools st_platform)
+st_apply_test_options(st_replay)
+
+add_executable(st_bench cpp/bench_main.cpp)
+target_link_libraries(st_bench PRIVATE st_tools st_platform)
+st_apply_test_options(st_bench)

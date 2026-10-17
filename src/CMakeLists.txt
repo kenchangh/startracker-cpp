@@ -10,6 +10,7 @@ add_library(st_core STATIC
   core/centroid/centroider.cpp
   core/track/sky_index.cpp
   core/track/tracker.cpp
+  core/pipeline/pipeline.cpp
 )
 add_library(st::core ALIAS st_core)
 target_include_directories(st_core PUBLIC
@@ -25,7 +26,12 @@ st_apply_core_options(st_core)
 # Platform layer (POSIX/Linux): mmap, V4L2, threads affinity. Same strict rules as the core.
 add_library(st_platform STATIC
   platform/mapped_file.cpp
+  platform/replay_source.cpp
+  platform/v4l2_source.cpp
+  platform/pipeline_runner.cpp
 )
 add_library(st::platform ALIAS st_platform)
 target_link_libraries(st_platform PUBLIC st_core)
 st_apply_core_options(st_platform)
+find_package(Threads REQUIRED)
+target_link_libraries(st_platform PUBLIC Threads::Threads)

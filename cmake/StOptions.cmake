@@ -9,7 +9,8 @@ if(ST_SANITIZE)
   add_compile_options(-fsanitize=${ST_SANITIZE} -fno-omit-frame-pointer)
   add_link_options(-fsanitize=${ST_SANITIZE})
   if(ST_SANITIZE MATCHES "undefined")
-    add_compile_options(-fno-sanitize-recover=undefined)
+    # The vptr check needs RTTI, which the core and platform libraries are built without.
+    add_compile_options(-fno-sanitize-recover=undefined -fno-sanitize=vptr)
   endif()
 endif()
 

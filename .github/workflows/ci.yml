@@ -124,8 +124,35 @@ jobs:
           parity-env/venv/bin/python tests/parity/e2e_parity.py --env parity-env --bin-dir build/release/tools --db fixtures/esa_default.stdb --fixtures fixtures --extra-pgm renders
       - name: Synthetic sweeps (FOV, sensitivity, noise, rate)
         run: build/release/tools/st_sweep --db fixtures/esa_default.stdb --trials 20 --out sweep.md --check && cat sweep.md >> $GITHUB_STEP_SUMMARY
+      - name: Pipeline replay (rendered 0.5 deg/s sequence, single-threaded and threaded)
+        run: |
+          build/release/tools/st_replay render --db fixtures/esa_default.stdb --out seq.strp --frames 40 --rate 0.5 --fov 14
+          build/release/tools/st_replay run --db fixtures/esa_default.stdb --in seq.strp --fov 14 --quiet
+          build/release/tools/st_replay run --db fixtures/esa_default.stdb --in seq.strp --fov 14 --quiet --threaded --pace 2
+      - name: Benchmark with the ESA database
+        run: build/release/tools/st_bench --db fixtures/esa_default.stdb --frames 40 --out bench.md && cat bench.md >> $GITHUB_STEP_SUMMARY
       - name: Solver parity of the cedar variants vs cedar-solve
         run: parity-env/venv/bin/python tests/parity/solve_parity.py --impl cedar --env parity-env --cases-bin build/release/tools/st_solve_cases --db fixtures/cedar_default.stdb --fixtures fixtures
+
+  # Latency benchmarks on the hosted x64 and arm64 runners (synthetic database; shared runners
+  # are noisy, so these numbers are indicative only; the report names the CPU).
+  bench:
+    name: bench ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14
+      - run: CC=gcc-14 CXX=g++-14 cmake --preset release && cmake --build --preset release --target st_bench
+      - run: build/release/tools/st_bench --frames 40 --out bench.md --json bench.json && cat bench.md >> $GITHUB_STEP_SUMMARY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ matrix.os }}
+          path: bench.*
 
   fuzz:
     runs-on: ubuntu-24.04
