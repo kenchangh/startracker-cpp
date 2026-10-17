@@ -118,6 +118,12 @@ jobs:
         run: parity-env/venv/bin/python tests/parity/generator_parity.py --env parity-env --dbtool build/release/tools/st_dbtool --bsc5 fixtures/bsc5 --unpatched
       - name: Solver parity vs ESA tetra3 (tetra3 centroids, 101 images x 4 option sets)
         run: parity-env/venv/bin/python tests/parity/solve_parity.py --env parity-env --cases-bin build/release/tools/st_solve_cases --db fixtures/esa_default.stdb --fixtures fixtures
+      - name: End-to-end parity (images -> centroids -> solution) incl. our renders
+        run: |
+          mkdir -p renders && build/release/tools/st_render --db fixtures/esa_default.stdb --out renders/r --count 20 --fov 14 --clutter 100000
+          parity-env/venv/bin/python tests/parity/e2e_parity.py --env parity-env --bin-dir build/release/tools --db fixtures/esa_default.stdb --fixtures fixtures --extra-pgm renders
+      - name: Synthetic sweeps (FOV, sensitivity, noise, rate)
+        run: build/release/tools/st_sweep --db fixtures/esa_default.stdb --trials 20 --out sweep.md --check && cat sweep.md >> $GITHUB_STEP_SUMMARY
       - name: Solver parity of the cedar variants vs cedar-solve
         run: parity-env/venv/bin/python tests/parity/solve_parity.py --impl cedar --env parity-env --cases-bin build/release/tools/st_solve_cases --db fixtures/cedar_default.stdb --fixtures fixtures
 
@@ -133,3 +139,5 @@ jobs:
         run: |
           mkdir -p corpus_db && build/fuzz/tests/fuzz/st_make_db_seed corpus_db/seed.stdb
           build/fuzz/tests/fuzz/st_fuzz_db_open -max_total_time=60 corpus_db
+      - name: Fuzz centroider (60 s)
+        run: mkdir -p corpus_c && build/fuzz/tests/fuzz/st_fuzz_centroider -max_total_time=60 -max_len=20000 corpus_c

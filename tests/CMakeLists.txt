@@ -39,6 +39,7 @@ add_executable(st_unit_tests
   unit/generator_test.cpp
   unit/esa_db_test.cpp
   unit/solver_test.cpp
+  unit/centroider_test.cpp
 )
 target_include_directories(st_unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(st_unit_tests PRIVATE ST_FIXTURES_DIR="${PROJECT_SOURCE_DIR}/fixtures")
@@ -97,3 +98,8 @@ foreach(src IN LISTS _cf_srcs)
     PASS_REGULAR_EXPRESSION "${expect}"
     RESOURCE_LOCK st_build_dir)
 endforeach()
+
+# Synthetic sweep through the full lost-in-space path (needs the ESA database fixture).
+add_test(NAME sweep.nominal
+  COMMAND st_sweep --db ${PROJECT_SOURCE_DIR}/fixtures/esa_default.stdb --trials 6 --check --quick)
+set_tests_properties(sweep.nominal PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 600)

@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "st/math/attitude.hpp"
 #include "st/math/linalg.hpp"
 
 namespace st {
@@ -881,12 +882,7 @@ Status LostInSpaceSolver::solve(std::span<const Centroid> centroids, std::uint32
         out.num_matches = nm;
         out.rotation_tetra3 = rot;
         out.proper_rotation = determinant(rot) > 0;
-        // tetra3 camera frame (boresight, -X, -Y) -> ours (X, Y, Z boresight).
-        Mat3 to_cv;
-        to_cv.m[0] = {0, -1, 0};
-        to_cv.m[1] = {0, 0, -1};
-        to_cv.m[2] = {1, 0, 0};
-        out.q_cam_icrs = from_matrix(to_cv * rot);
+        out.q_cam_icrs = from_matrix(tetra3_to_camera() * rot);
         // Report matches against the caller's centroid indices and database star rows.
         for (std::uint32_t m = 0; m < nm; ++m) {
           ws.matches[m].star_index = ws.nearby[ws.matches[m].star_index].star;
