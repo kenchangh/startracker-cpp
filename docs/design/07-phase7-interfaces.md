@@ -56,7 +56,7 @@ Status: **implemented** (2026-10-27). Written as built.
   on the 8 ESA images, the centre error was ≤ 0.31 px and the worst star 6.5 px. The 6.5 px
   case sits in the corner of the most distorted image.
 * **Local solve rate**: 15 of 23 images solve with at least one database (ESA 12, cedar
-  12). The others are outside the databases' FOV range (10–30°) or are very sparse (tree,
+  14). The others are outside the databases' FOV range (10–30°) or are very sparse (tree,
   roof).
 
 ### Result (CI run 40457215637, 2026-10-27)
