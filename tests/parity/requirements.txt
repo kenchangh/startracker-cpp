@@ -1,0 +1,4 @@
+# ESA tetra3 @ f9fa2eb uses np.math.factorial, removed in NumPy 2 (quirk b): pin NumPy 1.x.
+numpy==1.26.4
+scipy==1.13.1
+pillow==10.4.0

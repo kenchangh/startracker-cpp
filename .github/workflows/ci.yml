@@ -83,6 +83,49 @@ jobs:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y ninja-build clang-18 clang-tidy-18
       - run: CC=clang-18 CXX=clang++-18 cmake --preset dev
-      - run: cmake --build --preset dev --target st_core st_strict_headers
+      - run: cmake --build --preset dev --target st_core st_platform st_strict_headers
       - name: clang-tidy on the core and every public header
-        run: run-clang-tidy-18 -p build/dev -quiet -warnings-as-errors='*' 'src/core/|strict_headers/'
+        run: run-clang-tidy-18 -p build/dev -quiet -warnings-as-errors='*' 'src/core/|src/platform/|strict_headers/'
+
+  # Real data: fetch fixtures (pinned SHA-256), convert the ESA database, run fixture tests and
+  # parity against ESA tetra3 (pinned NumPy 1.x environment).
+  parity:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14
+      - uses: actions/cache@v4
+        with:
+          path: |
+            fixtures
+            parity-env
+          key: fixtures-${{ hashFiles('tools/fetch_fixtures.py', 'tests/parity/requirements.txt', 'tests/parity/setup_env.sh') }}
+      - name: Parity environment (ESA tetra3 @ f9fa2eb, NumPy 1.26)
+        run: PYTHON=python3.12 tests/parity/setup_env.sh parity-env
+      - name: Build
+        run: CC=gcc-14 CXX=g++-14 cmake --preset release && cmake --build --preset release
+      - name: Fetch fixtures
+        run: parity-env/venv/bin/python tools/fetch_fixtures.py --dbtool build/release/tools/st_dbtool
+      - name: Tests with fixtures
+        run: ctest --preset release -j4
+      - name: Converter check
+        run: parity-env/venv/bin/python tests/parity/converter_check.py fixtures/default_database.npz fixtures/esa_default.stdb
+      - name: Generator parity (BSC5, stable-sort tetra3)
+        run: parity-env/venv/bin/python tests/parity/generator_parity.py --env parity-env --dbtool build/release/tools/st_dbtool --bsc5 fixtures/bsc5 --unpatched
+
+  fuzz:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y ninja-build clang-18 libclang-rt-18-dev
+      - run: sudo sysctl vm.mmap_rnd_bits=28
+      - run: CC=clang-18 CXX=clang++-18 cmake --preset fuzz && cmake --build --preset fuzz
+      - name: Fuzz database loader (60 s)
+        run: |
+          mkdir -p corpus_db && build/fuzz/tests/fuzz/st_make_db_seed corpus_db/seed.stdb
+          build/fuzz/tests/fuzz/st_fuzz_db_open -max_total_time=60 corpus_db

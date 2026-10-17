@@ -37,6 +37,16 @@
       }
     },
     {
+      "name": "fuzz",
+      "displayName": "libFuzzer + ASan + UBSan (Clang)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo", "ST_ASSERTS": "ON", "ST_FUZZ": "ON",
+        "ST_BUILD_TESTS": "OFF", "ST_SANITIZE": "address,undefined",
+        "CMAKE_CXX_FLAGS": "-fsanitize=fuzzer-no-link"
+      }
+    },
+    {
       "name": "tsan",
       "displayName": "TSan",
       "inherits": "base",
@@ -51,7 +61,8 @@
     { "name": "release", "configurePreset": "release" },
     { "name": "release-asserts", "configurePreset": "release-asserts" },
     { "name": "asan", "configurePreset": "asan" },
-    { "name": "tsan", "configurePreset": "tsan" }
+    { "name": "tsan", "configurePreset": "tsan" },
+    { "name": "fuzz", "configurePreset": "fuzz" }
   ],
   "testPresets": [
     { "name": "base", "hidden": true, "output": { "outputOnFailure": true }, "execution": { "noTestsAction": "error" } },

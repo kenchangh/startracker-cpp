@@ -8,7 +8,7 @@ set(ST_ASSERTS "AUTO" CACHE STRING "ST_ASSERT checks: ON, OFF, or AUTO (on unles
 set_property(CACHE ST_ASSERTS PROPERTY STRINGS AUTO ON OFF)
 set(ST_SANITIZE "" CACHE STRING "Sanitizers: empty, 'address,undefined', or 'thread'")
 option(ST_BUILD_TESTS "Build tests" ON)
-option(ST_BUILD_TOOLS "Build host tools" OFF)
+option(ST_BUILD_TOOLS "Build host tools (needed by the tests)" ON)
 option(ST_FUZZ "Build libFuzzer targets (Clang only)" OFF)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -26,6 +26,10 @@ include(cmake/StOptions.cmake)
 
 add_subdirectory(src)
 
+if(ST_BUILD_TOOLS OR ST_BUILD_TESTS)
+  add_subdirectory(tools)
+endif()
+
 if(ST_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
@@ -35,5 +39,5 @@ if(ST_FUZZ)
   if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "ST_FUZZ requires Clang")
   endif()
-  # Fuzz targets arrive in phase 2 (database loader) and phase 4 (centroider).
+  add_subdirectory(tests/fuzz)
 endif()

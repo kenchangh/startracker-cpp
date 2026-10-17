@@ -32,9 +32,10 @@ Defaults (E:570-574): `pattern_stars_per_fov=10`, `verification_stars_per_fov=30
    `star_max_magnitude`.
 2. FOV scales: one scale if `max_fov/min_fov` is small, else log-spaced scales (step 1.5).
    Edge case (d) in §4.
-3. Thin to **pattern** density (`pattern_stars_per_fov`) and, separately, to
-   **verification** density (`verification_stars_per_fov`). The stored star table is the
-   verification-density set.
+3. Thin greedily in brightness order with a minimum separation of
+   `0.6 * fov / sqrt(stars_per_fov)` (chord length, via a KD-tree): first for **pattern** stars
+   (`pattern_stars_per_fov`, per scale) and then, adding to those, for **verification** stars
+   (`verification_stars_per_fov`, at `min_fov`). The stored star table is the verification set.
 4. Patterns: for every pattern star, all 3-neighbour combinations within the FOV
    (within fov/2 if `simplify_pattern`), forming 4-star patterns. Deduplicated through a
    Python `set`, then `list(set)`.
@@ -76,7 +77,10 @@ divided by `slots//2` (E:1120, 1231).
 10. Timeout: wall clock, checked once per image pattern.
 
 `get_centroids_from_image` is code-identical in ESA and cedar-solve (whitespace only), so
-centroider parity does not depend on which one is chosen.
+centroider parity does not depend on which one is chosen. Its defaults: `bg_sub_mode='local_mean'`
+(25x25 uniform filter, reflect borders), `sigma_mode='global_root_square'`, `sigma=2`, binary
+opening with a 3x3 cross, 4-connected labelling, `min_area=5`, `max_area=100`, intensity-weighted
+centroid of the background-subtracted pixels, sorted by spot sum.
 
 ### 2.3 Measured database sizes (headers parsed from the shipped `.npz` files)
 

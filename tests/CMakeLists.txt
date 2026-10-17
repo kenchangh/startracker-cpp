@@ -33,9 +33,15 @@ add_executable(st_unit_tests
   unit/span_vector_test.cpp
   unit/spsc_queue_test.cpp
   unit/status_test.cpp
+  unit/math_test.cpp
+  unit/camera_test.cpp
+  unit/db_test.cpp
+  unit/generator_test.cpp
+  unit/esa_db_test.cpp
 )
 target_include_directories(st_unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(st_unit_tests PRIVATE st_core st_alloc_guard GTest::gtest_main)
+target_compile_definitions(st_unit_tests PRIVATE ST_FIXTURES_DIR="${PROJECT_SOURCE_DIR}/fixtures")
+target_link_libraries(st_unit_tests PRIVATE st_core st_platform st_tools st_alloc_guard GTest::gtest_main)
 st_apply_test_options(st_unit_tests)
 gtest_discover_tests(st_unit_tests DISCOVERY_MODE PRE_TEST)
 
@@ -44,9 +50,11 @@ set(_audit_args -DNM=${CMAKE_NM} -DALLOWLIST=${PROJECT_SOURCE_DIR}/cmake/symbol_
 if(APPLE)
   list(APPEND _audit_args -DSTRIP_UNDERSCORE=ON)
 endif()
-add_test(NAME symbol_audit.st_core
-  COMMAND ${CMAKE_COMMAND} ${_audit_args} -DLIB=$<TARGET_FILE:st_core>
-          -P ${PROJECT_SOURCE_DIR}/cmake/symbol_audit.cmake)
+foreach(lib st_core st_platform)
+  add_test(NAME symbol_audit.${lib}
+    COMMAND ${CMAKE_COMMAND} ${_audit_args} -DLIB=$<TARGET_FILE:${lib}>
+            -P ${PROJECT_SOURCE_DIR}/cmake/symbol_audit.cmake)
+endforeach()
 
 add_library(st_audit_negative_control STATIC symbol_audit/negative_control.cpp)
 target_compile_options(st_audit_negative_control PRIVATE ${ST_STRICT_FLAGS})
