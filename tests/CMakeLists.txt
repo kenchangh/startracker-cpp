@@ -40,6 +40,7 @@ add_executable(st_unit_tests
   unit/esa_db_test.cpp
   unit/solver_test.cpp
   unit/centroider_test.cpp
+  unit/tracker_test.cpp
 )
 target_include_directories(st_unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(st_unit_tests PRIVATE ST_FIXTURES_DIR="${PROJECT_SOURCE_DIR}/fixtures")

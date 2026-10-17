@@ -8,6 +8,8 @@ add_library(st_core STATIC
   core/db/database.cpp
   core/solver/lost_in_space.cpp
   core/centroid/centroider.cpp
+  core/track/sky_index.cpp
+  core/track/tracker.cpp
 )
 add_library(st::core ALIAS st_core)
 target_include_directories(st_core PUBLIC
