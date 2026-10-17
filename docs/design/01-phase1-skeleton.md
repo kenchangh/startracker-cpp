@@ -114,12 +114,13 @@ two-thread stress test (10^7 items, checks order and no loss).
 
 `struct Clock { virtual std::int64_t now_ns() const noexcept = 0; }` (virtual dispatch is
 fine without RTTI). `SteadyClock` wraps `std::chrono::steady_clock`; `ManualClock` is for
-deterministic tests. Solver deadlines (phase 3) take a `const Clock&` so timeouts are
-testable and reproducible.
+deterministic tests. The solver's primary bound is a deterministic work budget (quirk (i) in
+00-overview.md §4); an optional deadline takes a `const Clock&` so timeouts are testable
+and reproducible.
 
 ## 3. Build system
 
-* CMake >= 3.21 (presets). Targets: `st_core` (static library), `st_tests`, later `st_tools`.
+* CMake >= 3.21 (presets). Ninja generator in presets where available. Targets: `st_core` (static library), `st_tests`, later `st_tools`.
 * Compilers: **GCC >= 11, Clang >= 14** (JetPack 6 / Ubuntu 22.04 ship GCC 11; Raspberry Pi
   OS bookworm ships GCC 12). AppleClang is supported for development only.
 * Options:
@@ -161,7 +162,8 @@ Three independent checks, all run by `ctest` and in CI:
      aligned_alloc, memalign, valloc` and forwards to `__libc_malloc` etc.
    * On macOS (dev only) the malloc family cannot be interposed without
      `DYLD_INSERT_LIBRARIES`; there the guard covers `operator new` only, plus a
-     `malloc_zone_statistics` before/after count. CI's authoritative run is Linux.
+     `malloc_zone_statistics` before/after count. Linux runs (local and CI) are
+     authoritative.
    * API: `st::test::AllocGuard guard(Mode::kAbort | Mode::kCount);` global atomic mode, so
      it applies to every thread (the phase 6 pipeline threads included). A thread-local
      "exempt" flag lets the test framework itself allocate when reporting results.
@@ -208,7 +210,9 @@ familiarity, CTest integration. Alternative considered: doctest (lighter, no dea
 ## 8. Definition of done for phase 1
 
 * `cmake --preset dev && cmake --build --preset dev && ctest --preset dev` passes locally
-  (macOS arm64, AppleClang) and on all CI jobs above.
+  (current dev box: Linux x86-64 container, GCC 13.3 and Clang 18.1, CMake 3.28, Ninja
+  1.11, including the ASan/UBSan and TSan presets) and on all CI jobs above. GCC 11,
+  ARM64 and macOS coverage come from CI.
 * Unit tests cover every container/arena/result operation including full/empty edges, and
   all of them run inside an abort-mode allocation guard.
 * Symbol audit and strict-header checks pass.
