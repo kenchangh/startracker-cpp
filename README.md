@@ -65,7 +65,9 @@ python3 tools/fetch_fixtures.py --dbtool build/dev/tools/st_dbtool   # databases
 ## Using it
 
 See [docs/usage.md](docs/usage.md) for the C++, C and Python APIs, the tools, the file
-formats and the coordinate conventions. A minimal C example:
+formats and the coordinate conventions.
+**Raspberry Pi with an HQ, Global Shutter or Camera Module 2/3 camera:** see
+[docs/raspberry-pi.md](docs/raspberry-pi.md). A minimal C example:
 
 ```c
 st_config cfg; st_config_init(&cfg);
