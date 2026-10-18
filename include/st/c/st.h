@@ -54,6 +54,9 @@ typedef enum st_status {
 
 typedef enum st_pixel_format { ST_MONO8 = 0, ST_MONO16 = 1 } st_pixel_format;
 typedef enum st_mode { ST_MODE_LOST = 0, ST_MODE_LOST_IN_SPACE = 1, ST_MODE_TRACKING = 2 } st_mode;
+/* Lost-in-space search. ESA = tetra3 (the default). CEDAR = cedar-solve's search, which also
+ * defaults the match threshold to cedar-solve's 1e-5. Use CEDAR with a cedar-solve database. */
+typedef enum st_solver_variant { ST_VARIANT_ESA = 0, ST_VARIANT_CEDAR = 1 } st_solver_variant;
 
 typedef struct st_camera {
   uint32_t width, height;    /* pixels */
@@ -74,6 +77,7 @@ typedef struct st_config {
   double match_radius_px;     /* tracker search radius; 0 = 4 */
   uint32_t min_matches;       /* 0 = 5 */
   uint32_t rate_window;       /* 0 = 16 */
+  uint32_t variant;           /* st_solver_variant for lost-in-space; 0 = ESA */
 } st_config;
 
 typedef struct st_centroid {
@@ -100,8 +104,9 @@ typedef struct st_lis_options {
   double fov_max_error_deg;        /* <= 0: none */
   uint32_t pattern_checking_stars; /* 0 = 8 */
   double match_radius;             /* fraction of width; 0 = 0.01 */
-  double match_threshold;          /* 0 = 1e-3 */
+  double match_threshold;          /* 0 = 1e-3 (ESA) or 1e-5 (CEDAR) */
   double distortion;               /* fixed k */
+  uint32_t variant;                /* st_solver_variant; 0 = ESA */
 } st_lis_options;
 
 typedef struct st_lis_result {
@@ -149,7 +154,8 @@ ST_API st_status st_track_centroids(st_tracker* t, int64_t t_ns, const st_centro
 ST_API st_status st_extract_centroids(st_tracker* t, const void* pixels, uint32_t width,
                                       uint32_t height, size_t stride_bytes, st_pixel_format format,
                                       st_centroid* out, uint32_t capacity, uint32_t* count);
-/* One tetra3-compatible lost-in-space solve; options may be NULL. Returns out->status. */
+/* One tetra3-compatible lost-in-space solve; options may be NULL. Returns out->status
+ * (ST_INVALID_ARGUMENT for an unknown variant). */
 ST_API st_status st_solve_lost_in_space(st_tracker* t, const st_centroid* centroids, uint32_t count,
                                         uint32_t width, uint32_t height,
                                         const st_lis_options* options, st_lis_result* out);

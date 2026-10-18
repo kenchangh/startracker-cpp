@@ -42,6 +42,17 @@ def main():
     r = t.solve_lost_in_space(cents, w, h)
     print(r)
     assert r.ok and r.num_matches >= 8
+    rc = t.solve_lost_in_space(cents, w, h, variant="cedar")  # cedar-solve's search, ESA database
+    print(rc)
+    assert rc.ok and abs(rc.ra_deg - r.ra_deg) < 0.01 and abs(rc.dec_deg - r.dec_deg) < 0.01
+    try:
+        t.solve_lost_in_space(cents, w, h, variant="nope")
+        raise AssertionError("bad variant accepted")
+    except ValueError:
+        pass
+    tc = st.Tracker(open(db_path, "rb").read(), st.Camera.ideal(w, h, 11.4), variant="cedar")
+    sc = tc.track_image(pix, 0, w, h, fmt)
+    assert sc.ok and sc.mode == "lost_in_space" and abs(sc.ra_deg - r.ra_deg) < 0.01, sc
     s1 = t.track_image(pix, 0, w, h, fmt)
     s2 = t.track_image(pix, 100_000_000, w, h, fmt)
     print(s1, s2)

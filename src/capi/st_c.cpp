@@ -57,6 +57,19 @@ st_config resolved(const st_config& in) noexcept {
   return c;
 }
 
+// Applies a st_solver_variant preset. CEDAR also uses cedar-solve's default match threshold
+// (1e-5) unless the caller set one. Returns false for an unknown variant.
+bool apply_variant(std::uint32_t variant, bool threshold_set, SolveOptions& o) noexcept {
+  switch (variant) {
+    case ST_VARIANT_ESA: o.variants = SolverVariants::esa(); return true;
+    case ST_VARIANT_CEDAR:
+      o.variants = SolverVariants::cedar();
+      if (!threshold_set) o.match_threshold = 1e-5;
+      return true;
+    default: return false;
+  }
+}
+
 CameraIntrinsics intrinsics(const st_camera& c) noexcept {
   CameraIntrinsics k;
   k.width = c.width;
@@ -91,6 +104,7 @@ TrackerConfig tracker_config(const st_config& c) noexcept {
   tc.match_radius_px = c.match_radius_px;
   tc.min_matches = c.min_matches;
   tc.rate_window = c.rate_window;
+  apply_variant(c.variant, false, tc.lis);  // validated in st_tracker_create
   if (tc.max_predicted < tc.min_matches) tc.max_predicted = tc.min_matches;
   return tc;
 }
@@ -193,6 +207,7 @@ st_status st_tracker_create(const st_config* config, const void* db, size_t db_s
   if (memory_size < kHeader) return ST_ARENA_EXHAUSTED;
   const st_config c = resolved(*config);
   if (c.camera.width == 0 || c.camera.height == 0 || !(c.camera.fx > 0)) return ST_INVALID_ARGUMENT;
+  if (c.variant != ST_VARIANT_ESA && c.variant != ST_VARIANT_CEDAR) return ST_INVALID_ARGUMENT;
   auto d = Database::open(std::span<const std::byte>(static_cast<const std::byte*>(db), db_size));
   if (!d.ok()) return to_c(d.status());
   auto* t = ::new (memory) st_tracker{};
@@ -311,6 +326,10 @@ st_status st_solve_lost_in_space(st_tracker* t, const st_centroid* centroids, ui
     if (options->match_radius > 0) o.match_radius = options->match_radius;
     if (options->match_threshold > 0) o.match_threshold = options->match_threshold;
     o.distortion = options->distortion;
+    if (!apply_variant(options->variant, options->match_threshold > 0, o)) {
+      out->status = ST_INVALID_ARGUMENT;
+      return ST_INVALID_ARGUMENT;
+    }
   }
   SolveResult r;
   const std::int64_t t0 = t->clock.now_ns();

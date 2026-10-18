@@ -44,6 +44,13 @@ STATUS = ["OK", "INVALID_ARGUMENT", "CAPACITY_EXCEEDED", "ARENA_EXHAUSTED", "NOT
           "NO_MATCH", "TIMEOUT", "WORK_BUDGET_EXHAUSTED", "CANCELLED", "IO_ERROR"]
 MODES = ["lost", "lost_in_space", "tracking"]
 MONO8, MONO16 = 0, 1
+VARIANTS = {"esa": 0, "cedar": 1}  # lost-in-space search: ESA tetra3 or cedar-solve
+
+
+def _variant(name):
+    if name not in VARIANTS:
+        raise ValueError(f"variant must be one of {sorted(VARIANTS)}, not {name!r}")
+    return VARIANTS[name]
 
 
 class StarTrackerError(RuntimeError):
@@ -66,7 +73,7 @@ class _Config(ctypes.Structure):
                 ("roi_tracking", ctypes.c_int), ("centroid_sigma", ctypes.c_float),
                 ("centroid_min_area", ctypes.c_uint32), ("centroid_max_area", ctypes.c_uint32),
                 ("match_radius_px", ctypes.c_double), ("min_matches", ctypes.c_uint32),
-                ("rate_window", ctypes.c_uint32)]
+                ("rate_window", ctypes.c_uint32), ("variant", ctypes.c_uint32)]
 
 
 class _Centroid(ctypes.Structure):
@@ -85,7 +92,8 @@ class _Solution(ctypes.Structure):
 class _LisOptions(ctypes.Structure):
     _fields_ = [("fov_estimate_deg", ctypes.c_double), ("fov_max_error_deg", ctypes.c_double),
                 ("pattern_checking_stars", ctypes.c_uint32), ("match_radius", ctypes.c_double),
-                ("match_threshold", ctypes.c_double), ("distortion", ctypes.c_double)]
+                ("match_threshold", ctypes.c_double), ("distortion", ctypes.c_double),
+                ("variant", ctypes.c_uint32)]
 
 
 class _LisResult(ctypes.Structure):
@@ -210,7 +218,8 @@ class Tracker:
     """Database + centroider + lost-in-space solver + tracker, in memory owned by this object."""
 
     def __init__(self, database, camera, max_centroids=64, roi_tracking=True, centroid_sigma=2.0,
-                 match_radius_px=4.0, min_matches=5):
+                 match_radius_px=4.0, min_matches=5, variant="esa"):
+        """variant: lost-in-space search, "esa" (tetra3) or "cedar" (cedar-solve, for cedar databases)."""
         self._db = (ctypes.c_char * len(database)).from_buffer_copy(database)  # stable, 8-byte aligned
         cfg = _Config()
         library.st_config_init(ctypes.byref(cfg))
@@ -220,6 +229,8 @@ class Tracker:
         cfg.centroid_sigma = centroid_sigma
         cfg.match_radius_px = match_radius_px
         cfg.min_matches = min_matches
+        cfg.variant = _variant(variant)
+        self.variant = variant
         self.camera = camera
         self.max_centroids = max_centroids
         need = library.st_tracker_memory_size(ctypes.byref(cfg), self._db, len(database))
@@ -264,9 +275,11 @@ class Tracker:
         return Solution(out)
 
     def solve_lost_in_space(self, centroids, width, height, fov_estimate_deg=0.0, fov_max_error_deg=0.0,
-                            pattern_checking_stars=0, match_radius=0.0, match_threshold=0.0, distortion=0.0):
+                            pattern_checking_stars=0, match_radius=0.0, match_threshold=0.0, distortion=0.0,
+                            variant=None):
+        """variant: "esa" or "cedar"; None uses the tracker's."""
         o = _LisOptions(fov_estimate_deg, fov_max_error_deg, pattern_checking_stars, match_radius,
-                        match_threshold, distortion)
+                        match_threshold, distortion, _variant(self.variant if variant is None else variant))
         r = _LisResult()
         library.st_solve_lost_in_space(self._h, self._cents(centroids), len(centroids), width, height,
                                        ctypes.byref(o), ctypes.byref(r))

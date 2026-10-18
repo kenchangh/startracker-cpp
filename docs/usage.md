@@ -78,6 +78,10 @@ tracker.value().update(t_ns, std::span(cs.data(), n.value()), sol);
     attitude yet.
   * `st_track_centroids()` takes your own centroids.
   * `st_extract_centroids()` and `st_solve_lost_in_space()` give tetra3-style single solves.
+* **Search variant**: `variant` in `st_config` (tracking) and in `st_lis_options` (single
+  solves) picks ESA tetra3's search (`ST_VARIANT_ESA`, the default) or cedar-solve's
+  (`ST_VARIANT_CEDAR`). Use the cedar variant with a database converted from cedar-solve; it
+  also defaults the match threshold to cedar-solve's 1e-5.
 * Only `st_*` symbols are exported. The library never allocates (symbol audit).
 
 ## 5. Python (`python/startracker`, ctypes, no build step)
@@ -88,6 +92,8 @@ t = st.Tracker(open("esa_default.stdb", "rb").read(), st.Camera.ideal(1280, 960,
 sol = t.track_image(numpy_uint16_image, t_ns=0)   # Solution(OK, lost_in_space, ra=..., ...)
 cents = t.extract_centroids(img)
 res = t.solve_lost_in_space(cents, 1280, 960, fov_estimate_deg=11.4)
+# With a cedar-solve database, use cedar-solve's search:
+t = st.Tracker(open("cedar_default.stdb", "rb").read(), st.Camera.ideal(1280, 960, 11.4), variant="cedar")
 ```
 
 ## 6. Tools (host only; these may allocate)
