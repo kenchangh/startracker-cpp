@@ -39,34 +39,54 @@ scripts/raspi/run.sh --camera hq-16mm
 The full guide is in [docs/raspberry-pi.md](docs/raspberry-pi.md). It covers which lens to
 pick, lens calibration, memory, real-time settings, and using C/C++ instead of Python.
 
-## Benchmark: vs ESA's tetra3
+## Benchmark: vs ESA's tetra3 and cedar-solve
 
-![startracker-cpp vs ESA tetra3: 4.6x faster on photos that solve, 17x faster on photos with no match, same answers](docs/images/bench_vs_tetra3.png)
+![startracker-cpp vs ESA tetra3 and cedar-solve: about 5x faster on photos that solve, 16x faster than tetra3 on photos with no match, same answers](docs/images/bench_vs_tetra3.png)
 
-The test set is 23 real night-sky photographs, every one giving the same answer as tetra3.
-Each photo is processed start to finish: find the stars in the image, then identify them.
+The test set is 23 real night-sky photographs. Each photo is processed start to finish: find
+the stars in the image, then identify them. startracker-cpp is compared with each library on
+that library's own star database, and gives the same answer on every photo.
 
 | median per photo | ESA tetra3 (Python) | startracker-cpp | speed-up |
 |---|---|---|---|
-| **12 photos that solve** | **44.3 ms** | **9.7 ms** | **4.6×** |
-| └ finding stars | 40.0 ms | 9.5 ms | 4.2× |
-| └ identifying them | 4.4 ms | 0.12 ms | 36× |
-| **11 photos with no match** (worst case: searches everything) | **109 ms** | **6.6 ms** | **17×** |
+| **12 photos that solve** | **16.4 ms** | **3.3 ms** | **4.9×** |
+| └ finding stars | 14.9 ms | 3.3 ms | 4.6× |
+| └ identifying them | 1.4 ms | 0.05 ms | 28× |
+| **11 photos with no match** (worst case: searches everything) | **35.2 ms** | **2.2 ms** | **16×** |
+
+| median per photo | cedar-solve (Python) | startracker-cpp, `variant="cedar"` | speed-up |
+|---|---|---|---|
+| **19 photos that solve** | **15.4 ms** | **3.3 ms** | **4.7×** |
+| └ finding stars | 14.7 ms | 3.2 ms | 4.6× |
+| └ identifying them | 0.96 ms | 0.05 ms | 21× |
+| **2 photos with no match, where cedar-solve gives up** at its 5 s timeout | **5006 ms** (stopped) | **82 ms** (finished) | **at least 61×** |
 
 * **How it was measured:**
-  * Intel Xeon @ 2.80 GHz (4 vCPU container), one thread each, the same star database.
-  * Each number is the median of 21 runs per photo.
+  * Apple M3 Max, one thread each. Each number is the median of 21 runs per photo.
+  * Each pair shares one database: ESA's for tetra3, cedar-solve's for cedar-solve.
+    cedar-solve cannot load ESA's database.
+  * Both libraries find stars with their own Python centroider. cedar-solve can also use a
+    separate star finder, cedar-detect, which was not tested.
   * startracker-cpp was called through its Python bindings, so the call overhead counts
-    against it. Calling the library from C++ directly measured the same within noise.
-* **Where the time goes:** finding the stars in the image is about 95% of a frame. While
+    against it.
+* **cedar-solve's timeout:** cedar-solve stops searching after 5 s by default; ESA tetra3 has
+  no limit.
+  * On the 2 photos above it stopped without finishing. Left to run, it took 43.6 s on one
+    and crashed on the other (a cedar-solve indexing bug).
+  * Its other 2 no-match photos have only 5 and 7 stars, so there is little to search:
+    37.4 ms for cedar-solve, 8.3 ms for startracker-cpp.
+* **cedar-solve's search:** with cedar-solve's database, pass `variant="cedar"`
+  (`ST_VARIANT_CEDAR` in C). It solves 19 of the 23 photos; ESA's search on the same database
+  solves 14.
+* **Where the time goes:** finding the stars in the image is most of a frame. While
   tracking, the library skips that full-image search and looks only at small windows
   around the predicted stars (about 0.1 ms per frame).
-* **On arm64:** a GitHub-hosted Arm Neoverse N2 runner took 10.9 ms for a full 1280×960
+* **On arm64 Linux:** a GitHub-hosted Arm Neoverse N2 runner took 10.9 ms for a full 1280×960
   frame and 0.03 ms for tracking windows (synthetic database).
 * **Raspberry Pi:** no numbers yet. Run `scripts/raspi/run.sh --camera <yours> --bench`.
 * **Reproduce:**
-  * `tests/parity/speed_vs_tetra3.py` runs the comparison;
-  * `docs/images/make_bench_chart.py` draws the chart;
+  * `tests/parity/speed_vs_tetra3.py` runs both comparisons;
+  * `docs/images/make_bench_chart.py --font xkcd-script.ttf` draws the chart;
   * the raw numbers are in `docs/images/bench_vs_tetra3.json`.
 
 ## What's inside
@@ -74,7 +94,8 @@ Each photo is processed start to finish: find the stars in the image, then ident
 * **Lost-in-space solver:** a port of ESA tetra3 (@ f9fa2eb).
   * Parity: 404/404 parity cases; the worst boresight difference is 0.0016″.
   * Search limits: a deterministic work budget and an optional deadline.
-  * Cedar Solve's improvements are available as opt-in variants (303/303 parity cases).
+  * Cedar Solve's search is available as an opt-in variant, from C++, C and Python
+    (303/303 parity cases).
 * **Centroider:** matches tetra3's `get_centroids_from_image` within 6e-5 px on 101 images.
   It also has hot-pixel maps, trail rejection, and a windowed (ROI) mode for tracking.
 * **Tracker:**
@@ -114,7 +135,8 @@ python3 tools/fetch_fixtures.py --dbtool build/release/tools/st_dbtool   # datab
 
 ```python
 import startracker as st   # PYTHONPATH=python, STARTRACKER_LIB=build/release/src/libstartracker.so
-t = st.Tracker(open("fixtures/cedar_default.stdb", "rb").read(), st.Camera.ideal(1280, 960, 14.0))
+t = st.Tracker(open("fixtures/cedar_default.stdb", "rb").read(), st.Camera.ideal(1280, 960, 14.0),
+               variant="cedar")   # cedar-solve's search, for its database
 sol = t.track_image(image_uint16, t_ns=0)   # Solution(OK, lost_in_space, ra=..., dec=..., roll=...)
 ```
 
