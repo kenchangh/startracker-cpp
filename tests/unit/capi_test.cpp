@@ -129,8 +129,8 @@ TEST(CApi, CedarVariantMatchesCxx) {
   rc.camera = CameraModel::ideal(640, 480, 17 * kDegToRad);
   rc.exposure_s = 0.05;
   rc.q_cam_icrs = attitude_from_radec_roll(1.1, 0.4, -0.7);
-  const auto seq = tools::render_sequence(tools::stars_from_database(s.db), rc,
-                                          Vec3{0.0, 0.0, 0.0}, 1, 0);
+  const auto seq =
+      tools::render_sequence(tools::stars_from_database(s.db), rc, Vec3{0.0, 0.0, 0.0}, 1, 0);
   st_centroid c[64];
   std::uint32_t n = 0;
   ASSERT_EQ(st_extract_centroids(t, seq.pixels.data(), 640, 480, 0, ST_MONO16, c, 64, &n), ST_OK);
@@ -160,11 +160,11 @@ TEST(CApi, CedarVariantMatchesCxx) {
     EXPECT_DOUBLE_EQ(r.ra_deg, want.ra_deg);
     EXPECT_DOUBLE_EQ(r.dec_deg, want.dec_deg);
     EXPECT_DOUBLE_EQ(r.roll_deg, want.roll_deg);
-    EXPECT_LT(angle_between(Quat{r.q_cam_icrs[0], r.q_cam_icrs[1], r.q_cam_icrs[2],
-                                 r.q_cam_icrs[3]},
-                            seq.truth[0]) /
-                  kArcsecToRad,
-              40.0);
+    EXPECT_LT(
+        angle_between(Quat{r.q_cam_icrs[0], r.q_cam_icrs[1], r.q_cam_icrs[2], r.q_cam_icrs[3]},
+                      seq.truth[0]) /
+            kArcsecToRad,
+        40.0);
   }
   st_lis_options bad{};
   bad.variant = 2;
@@ -176,9 +176,9 @@ TEST(CApi, CedarVariantMatchesCxx) {
   st_solution sol;
   ASSERT_EQ(st_track_image(t, 0, seq.pixels.data(), 640, 480, 0, ST_MONO16, &sol), ST_OK);
   EXPECT_EQ(sol.mode, ST_MODE_LOST_IN_SPACE);
-  EXPECT_LT(angle_between(Quat{sol.q_cam_icrs[0], sol.q_cam_icrs[1], sol.q_cam_icrs[2],
-                               sol.q_cam_icrs[3]},
-                          seq.truth[0]) /
+  EXPECT_LT(angle_between(
+                Quat{sol.q_cam_icrs[0], sol.q_cam_icrs[1], sol.q_cam_icrs[2], sol.q_cam_icrs[3]},
+                seq.truth[0]) /
                 kArcsecToRad,
             40.0);
 }
